@@ -1,8 +1,20 @@
-from pydantic import SecretStr
+from pydantic import BaseModel
 
 from src.schemas.base import BaseSchema
 
 
-class User(BaseSchema):
+class UserBase(BaseSchema):
     login: str
-    password: SecretStr
+
+
+class UserCreate(UserBase):
+    password: str
+
+
+class UserUpdate(BaseSchema):
+    login: str | None = None
+    password: str | None = None
+
+
+class User(UserBase):
+    id: int
