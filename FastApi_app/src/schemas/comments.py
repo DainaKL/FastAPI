@@ -1,7 +1,10 @@
-from pydantic import Field
 from datetime import datetime
+
+from pydantic import Field
+
 from src.schemas.base import BaseSchema
 from src.schemas.users import User
+
 
 class Comment(BaseSchema):
     text: str

@@ -1,12 +1,16 @@
+from typing import List
+
 from fastapi import APIRouter, status, HTTPException
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
-from typing import List
+
 from src.schemas.posts import Post
 
-Base = declarative_base()
 
+Base = declarative_base() # Базовый класс для моделей БД
+
+# Модели БД
 class CategoryModel(Base):
     __tablename__ = "categories"
     id = Column(Integer, primary_key=True, index=True)
