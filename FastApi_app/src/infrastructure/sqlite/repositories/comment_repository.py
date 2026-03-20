@@ -12,9 +12,14 @@ class CommentRepository(BaseRepository[Comment]):
         super().__init__(session, Comment)
     
     def get_by_post(self, post_id: int) -> List[Comment]:
+        if not post_id:
+            return None
         stmt = select(Comment).where(Comment.post_id == post_id)
-        return list(self.session.execute(stmt).scalars().all())
+        return self.session.scalar(stmt).scalar_one_or_none()
     
     def get_by_author(self, author_id: int) -> List[Comment]:
+        if not author_id:
+            return None
         stmt = select(Comment).where(Comment.author_id == author_id)
-        return list(self.session.execute(stmt).scalars().all())
+        return self.session.scalar(stmt).scalar_one_or_none()
+    

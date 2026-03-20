@@ -21,7 +21,6 @@ async def get_posts(
         posts = post_repo.get_all(skip=skip, limit=limit)
         return posts
     except Exception as e:
-        print(f"Error in get_posts: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # GET запрос для получения конкретного поста по ID
@@ -38,7 +37,6 @@ async def get_post(
             raise HTTPException(status_code=404, detail="Post not found")
         return post
     except Exception as e:
-        print(f"Error in get_post: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # POST запрос для создания нового поста
@@ -57,7 +55,6 @@ async def create_post(
             raise HTTPException(status_code=500, detail="Failed to create post")
         return new_post
     except Exception as e:
-        print(f"Error in create_post: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # PUT запрос для обновления существующего поста
@@ -77,7 +74,6 @@ async def update_post(
             raise HTTPException(status_code=404, detail="Post not found")
         return updated_post
     except Exception as e:
-        print(f"Error in update_post: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # DELETE запрос для удаления поста
@@ -92,7 +88,6 @@ async def delete_post(
         # Если пост не найден, возвращаем 404 ошибку
         if not deleted_post:
             raise HTTPException(status_code=404, detail="Post not found")
-        return {"message": "Post deleted successfully"}
     except Exception as e:
-        print(f"Error in delete_post: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    

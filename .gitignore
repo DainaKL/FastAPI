@@ -42,7 +42,7 @@ htmlcov/
 .nox/
 .coverage
 .coverage.*
-.cache
+.cachehttps://github.com/DainaKL/FastAPI
 nosetests.xml
 coverage.xml
 *.cover
@@ -58,8 +58,22 @@ cover/
 # Django stuff:
 *.log
 local_settings.py
-db.sqlite3
-db.sqlite3-journal
+
+
+
+
+
+
+
+#db.sqlite3
+#b.sqlite3-journal
+""""
+
+
+
+
+
+
 
 # Flask stuff:
 instance/

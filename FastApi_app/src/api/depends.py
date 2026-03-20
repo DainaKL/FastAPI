@@ -1,4 +1,5 @@
 from fastapi import Depends
+from sqlalchemy.orm import Session
 
 from src.infrastructure.sqlite.database import get_db
 from src.infrastructure.sqlite.repositories.user_repository import UserRepository
@@ -6,8 +7,6 @@ from src.infrastructure.sqlite.repositories.post_repository import PostRepositor
 from src.infrastructure.sqlite.repositories.category_repository import CategoryRepository
 from src.infrastructure.sqlite.repositories.location_repository import LocationRepository
 from src.infrastructure.sqlite.repositories.comment_repository import CommentRepository
-
-from sqlalchemy.orm import Session
 
 
 # Зависимости для репозиториев

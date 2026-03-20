@@ -1,4 +1,4 @@
-from typing import TypeVar, Generic, Type, Optional, List
+from typing import TypeVar, Generic, Type, List
 
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -13,7 +13,7 @@ class BaseRepository(Generic[ModelType]):
         self.session = session
         self.model = model
     
-    def get_by_id(self, id: int) -> Optional[ModelType]:
+    def get_by_id(self, id: int) -> ModelType | None:
         return self.session.get(self.model, id)
     
     def get_all(self, skip: int = 0, limit: int = 100) -> List[ModelType]:
@@ -23,12 +23,11 @@ class BaseRepository(Generic[ModelType]):
     def create(self, **kwargs) -> ModelType:
         obj = self.model(**kwargs)
         self.session.add(obj)
-        # Не коммитим здесь - коммит будет в контекстном менеджере Database
         self.session.flush()
         self.session.refresh(obj)
         return obj
     
-    def update(self, id: int, **kwargs) -> Optional[ModelType]:
+    def update(self, id: int, **kwargs) -> ModelType|None:
         obj = self.get_by_id(id)
         if obj:
             for key, value in kwargs.items():
@@ -38,7 +37,7 @@ class BaseRepository(Generic[ModelType]):
             self.session.refresh(obj)
         return obj
     
-    def delete(self, id: int) -> Optional[ModelType]:
+    def delete(self, id: int) -> ModelType|None:
         obj = self.get_by_id(id)
         if obj:
             self.session.delete(obj)

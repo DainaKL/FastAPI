@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -11,6 +9,8 @@ class UserRepository(BaseRepository[User]):
     def __init__(self, session: Session):
         super().__init__(session, User)
     
-    def get_by_login(self, login: str) -> Optional[User]:
+    def get_by_login(self, login: str) -> User | None:
+        if not login:
+            return None
         stmt = select(User).where(User.login == login)
         return self.session.execute(stmt).scalar_one_or_none()
