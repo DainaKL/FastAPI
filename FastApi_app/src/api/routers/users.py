@@ -14,7 +14,7 @@ async def get_users(
     limit: int = 100,
     repo: UserRepository = Depends(get_user_repository)
 ):
-    """Получение списка всех пользователей"""
+    # Получение списка всех пользователей
     users = repo.get_all(skip=skip, limit=limit)
     return users
 
@@ -24,7 +24,7 @@ async def get_user(
     user_id: int,
     repo: UserRepository = Depends(get_user_repository)
 ):
-    """Получение пользователя по ID"""
+    # Получение пользователя по ID
     user = repo.get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -36,7 +36,7 @@ async def get_user_by_username(
     username: str,
     repo: UserRepository = Depends(get_user_repository)
 ):
-    """Получение пользователя по имени"""
+    # Получение пользователя по имени
     user = repo.get_by_username(username)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -48,7 +48,7 @@ async def create_user(
     user_data: UserCreate,
     repo: UserRepository = Depends(get_user_repository)
 ):
-    """Создание нового пользователя"""
+    # Создание нового пользователя
     # Проверка на существующего пользователя
     if repo.get_by_username(user_data.username):
         raise HTTPException(status_code=400, detail="Username already exists")
@@ -70,7 +70,7 @@ async def update_user(
     user_data: UserUpdate,
     repo: UserRepository = Depends(get_user_repository)
 ):
-    """Обновление пользователя"""
+    # Обновление пользователя
     update_dict = {k: v for k, v in user_data.model_dump().items() if v is not None}
     updated = repo.update(user_id, **update_dict)
     if not updated:
@@ -83,7 +83,7 @@ async def delete_user(
     user_id: int,
     repo: UserRepository = Depends(get_user_repository)
 ):
-    """Удаление пользователя"""
+    # Удаление пользователя
     deleted = repo.delete(user_id)
     try:
         if not deleted:

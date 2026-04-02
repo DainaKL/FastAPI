@@ -25,4 +25,4 @@ class CategoryUpdate(BaseSchema):
 
 class Category(CategoryBase):
     id: int
-    created_at: datetime
+    created_at: datetime | None

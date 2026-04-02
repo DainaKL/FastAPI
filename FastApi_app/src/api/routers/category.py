@@ -13,7 +13,7 @@ async def get_categories(
     limit: int = 100,
     repo: CategoryRepository = Depends(get_category_repository)
 ):
-    """Получение списка всех категорий"""
+    # Получение списка всех категорий
     try:
         categories = repo.get_all(skip=skip, limit=limit)
         return categories
@@ -25,7 +25,7 @@ async def get_category(
     id: int,
     repo: CategoryRepository = Depends(get_category_repository)
 ):
-    """Получение категории по ID"""
+    # Получение категории по ID
     category = repo.get_by_id(id)
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -36,7 +36,7 @@ async def get_category_by_slug(
     slug: str,
     repo: CategoryRepository = Depends(get_category_repository)
 ):
-    """Получение категории по slug"""
+    # Получение категории по slug
     category = repo.get_by_slug(slug)
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -47,7 +47,7 @@ async def create_category(
     category_data: CategoryCreate,
     repo: CategoryRepository = Depends(get_category_repository)
 ):
-    """Создание новой категории"""
+    # Создание новой категории
     try:
         category_dict = category_data.model_dump()
         new_category = repo.create(**category_dict)
@@ -61,7 +61,7 @@ async def update_category(
     category_data: CategoryUpdate,
     repo: CategoryRepository = Depends(get_category_repository)
 ):
-    """Обновление категории"""
+    # Обновление категории
     update_dict = {k: v for k, v in category_data.model_dump().items() if v is not None}
     updated = repo.update(id, **update_dict)
     if not updated:
@@ -73,7 +73,7 @@ async def delete_category(
     id: int,
     repo: CategoryRepository = Depends(get_category_repository)
 ):
-    """Удаление категории"""
+    # Удаление категории
     deleted = repo.delete(id)
     try:
         if not deleted:

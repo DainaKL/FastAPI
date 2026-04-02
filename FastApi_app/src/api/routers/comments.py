@@ -14,7 +14,7 @@ async def get_comments(
     limit: int = 100,
     repo: CommentRepository = Depends(get_comment_repository)
 ):
-    """Получение списка всех комментариев"""
+    # Получение списка всех комментариев
     try:
         comments = repo.get_all(skip=skip, limit=limit)
         return comments
@@ -28,7 +28,7 @@ async def get_published_comments(
     limit: int = 100,
     repo: CommentRepository = Depends(get_comment_repository)
 ):
-    """Получение опубликованных комментариев"""
+    # Получение опубликованных комментариев
     try:
         comments = repo.get_published(skip=skip, limit=limit)
         return comments
@@ -41,7 +41,7 @@ async def get_comment(
     comment_id: int,
     repo: CommentRepository = Depends(get_comment_repository)
 ):
-    """Получение комментария по ID"""
+    # Получение комментария по ID
     comment = repo.get_by_id(comment_id)
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
@@ -55,7 +55,7 @@ async def get_comments_by_post(
     limit: int = 100,
     repo: CommentRepository = Depends(get_comment_repository)
 ):
-    """Получение комментариев к посту"""
+    # Получение комментариев к посту
     comments = repo.get_by_post(post_id, skip=skip, limit=limit)
     return comments
 
@@ -67,7 +67,7 @@ async def get_comments_by_author(
     limit: int = 100,
     repo: CommentRepository = Depends(get_comment_repository)
 ):
-    """Получение комментариев автора"""
+    # Получение комментариев автора
     comments = repo.get_by_author(author_id, skip=skip, limit=limit)
     return comments
 
@@ -77,7 +77,7 @@ async def create_comment(
     comment_data: CommentCreate,
     repo: CommentRepository = Depends(get_comment_repository)
 ):
-    """Создание нового комментария"""
+    # Создание нового комментария
     try:
         comment_dict = comment_data.model_dump()
         new_comment = repo.create(**comment_dict)
@@ -92,7 +92,7 @@ async def update_comment(
     comment_data: CommentUpdate,
     repo: CommentRepository = Depends(get_comment_repository)
 ):
-    """Обновление комментария"""
+    # Обновление комментария
     try:
         update_dict = {k: v for k, v in comment_data.model_dump().items() if v is not None}
         updated = repo.update(comment_id, **update_dict)
@@ -108,7 +108,7 @@ async def delete_comment(
     comment_id: int,
     repo: CommentRepository = Depends(get_comment_repository)
 ):
-    """Удаление комментария"""
+    # Удаление комментария
     deleted = repo.delete(comment_id)
     try:
         if not deleted:

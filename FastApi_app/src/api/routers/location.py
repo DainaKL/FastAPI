@@ -14,7 +14,7 @@ async def get_locations(
     limit: int = 100,
     repo: LocationRepository = Depends(get_location_repository)
 ):
-    """Получение списка всех локаций"""
+    # Получение списка всех локаций
     try:
         locations = repo.get_all(skip=skip, limit=limit)
         return locations
@@ -28,7 +28,7 @@ async def get_published_locations(
     limit: int = 100,
     repo: LocationRepository = Depends(get_location_repository)
 ):
-    """Получение только опубликованных локаций"""
+    # Получение только опубликованных локаций
     try:
         locations = repo.get_published(skip=skip, limit=limit)
         return locations
@@ -41,7 +41,7 @@ async def get_location(
     location_id: int,
     repo: LocationRepository = Depends(get_location_repository)
 ):
-    """Получение локации по ID"""
+    # Получение локации по ID
     location = repo.get_by_id(location_id)
     if not location:
         raise HTTPException(status_code=404, detail="Location not found")
@@ -53,7 +53,7 @@ async def get_location_by_name(
     name: str,
     repo: LocationRepository = Depends(get_location_repository)
 ):
-    """Получение локации по названию"""
+    # Получение локации по названию
     location = repo.get_by_name(name)
     if not location:
         raise HTTPException(status_code=404, detail="Location not found")
@@ -65,7 +65,7 @@ async def create_location(
     location_data: LocationCreate,
     repo: LocationRepository = Depends(get_location_repository)
 ):
-    """Создание новой локации"""
+    # Создание новой локации
     try:
         # Проверка на существующую локацию
         existing = repo.get_by_name(location_data.name)
@@ -87,7 +87,7 @@ async def update_location(
     location_data: LocationUpdate,
     repo: LocationRepository = Depends(get_location_repository)
 ):
-    """Обновление локации"""
+    # Обновление локации
     try:
         update_dict = {k: v for k, v in location_data.model_dump().items() if v is not None}
         updated = repo.update(location_id, **update_dict)
@@ -103,7 +103,7 @@ async def delete_location(
     location_id: int,
     repo: LocationRepository = Depends(get_location_repository)
 ):
-    """Удаление локации"""
+    # Удаление локации
     deleted = repo.delete(location_id)
     try:
         if not deleted:
