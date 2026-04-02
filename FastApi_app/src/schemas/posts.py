@@ -1,11 +1,9 @@
 from datetime import datetime
 
-from pydantic import Field
-
 from src.schemas.base import BaseSchema
 
 
-class PostBase(BaseSchema):  
+class PostBase(BaseSchema):
     title: str
     text: str
     pub_date: datetime
@@ -29,7 +27,7 @@ class PostUpdate(BaseSchema):
     image: str | None = None
 
 
-class Post(PostBase): 
+class Post(PostBase):
     id: int
     author_id: int
     location_id: int | None = None

@@ -1,8 +1,9 @@
-from infrastructure.sqlite.database import database
-from infrastructure.sqlite.repositories.users import UserRepository
-from schemas.users import User as UserSchema, CreateUser
 from core.exceptions.database_exceptions import UserAlreadyExistsException
 from core.exceptions.domain_exceptions import UserLoginIsNotUniqueException
+from infrastructure.sqlite.database import database
+from infrastructure.sqlite.repositories.users import UserRepository
+from schemas.users import CreateUser
+from schemas.users import User as UserSchema
 
 
 class CreateUserUseCase:

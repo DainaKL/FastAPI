@@ -1,8 +1,8 @@
+from core.exceptions.database_exceptions import UserNotFoundException
+from core.exceptions.domain_exceptions import UserNotFoundByLoginException
 from infrastructure.sqlite.database import database
 from infrastructure.sqlite.repositories.users import UserRepository
 from schemas.users import User as UserSchema
-from core.exceptions.database_exceptions import UserNotFoundException
-from core.exceptions.domain_exceptions import UserNotFoundByLoginException
 
 
 class GetUserByLoginUseCase:

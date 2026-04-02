@@ -3,18 +3,19 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.depends import get_post_repository
+from src.infrastructure.sqlite.repositories.post_repository import \
+    PostRepository
 from src.schemas.posts import Post, PostCreate, PostUpdate
-from src.infrastructure.sqlite.repositories.post_repository import PostRepository
-
 
 router = APIRouter(prefix="/base", tags=["Base APIs"])
+
 
 # GET запрос для получения списка всех постов с пагинацией
 @router.get("/posts", response_model=List[Post])
 async def get_posts(
-    skip: int = 0, 
+    skip: int = 0,
     limit: int = 100,
-    post_repo: PostRepository = Depends(get_post_repository)
+    post_repo: PostRepository = Depends(get_post_repository),
 ):
     # Получение списка всех постов из репозитория
     try:
@@ -23,12 +24,10 @@ async def get_posts(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # GET запрос для получения конкретного поста по ID
 @router.get("/posts/{id}", response_model=Post)
-async def get_post(
-    id: int,
-    post_repo: PostRepository = Depends(get_post_repository)
-):
+async def get_post(id: int, post_repo: PostRepository = Depends(get_post_repository)):
     # Получение поста по ID из репозитория
     try:
         post = post_repo.get_by_id(id)
@@ -39,11 +38,11 @@ async def get_post(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # POST запрос для создания нового поста
 @router.post("/posts", status_code=status.HTTP_201_CREATED, response_model=Post)
 async def create_post(
-    post_data: PostCreate,
-    post_repo: PostRepository = Depends(get_post_repository)
+    post_data: PostCreate, post_repo: PostRepository = Depends(get_post_repository)
 ):
     # Создание нового поста в базе данных
     try:
@@ -57,12 +56,13 @@ async def create_post(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # PUT запрос для обновления существующего поста
 @router.put("/posts/{id}", response_model=Post)
 async def update_post(
-    id: int, 
+    id: int,
     post_data: PostUpdate,
-    post_repo: PostRepository = Depends(get_post_repository)
+    post_repo: PostRepository = Depends(get_post_repository),
 ):
     # Обновление существующего поста
     try:
@@ -76,11 +76,11 @@ async def update_post(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # DELETE запрос для удаления поста
 @router.delete("/posts/{id}")
 async def delete_post(
-    id: int,
-    post_repo: PostRepository = Depends(get_post_repository)
+    id: int, post_repo: PostRepository = Depends(get_post_repository)
 ):
     # Удаление поста из базы данных
     try:
@@ -90,4 +90,3 @@ async def delete_post(
             raise HTTPException(status_code=404, detail="Post not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    

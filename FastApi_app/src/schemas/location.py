@@ -1,12 +1,10 @@
 from datetime import datetime
 
-from pydantic import Field
-
 from src.schemas.base import BaseSchema
 
 
 class LocationBase(BaseSchema):
-    name: str 
+    name: str
     is_published: bool = True
 
 

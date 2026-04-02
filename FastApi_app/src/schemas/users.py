@@ -1,5 +1,3 @@
-from pydantic import BaseModel
-
 from src.schemas.base import BaseSchema
 
 

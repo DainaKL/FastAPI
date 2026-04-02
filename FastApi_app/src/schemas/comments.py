@@ -1,5 +1,4 @@
 from datetime import datetime
-from pydantic import Field
 
 from src.schemas.base import BaseSchema
 
@@ -21,6 +20,6 @@ class CommentUpdate(BaseSchema):
 
 class Comment(CommentBase):
     id: int
-    author_id: int  
-    post_id: int    
+    author_id: int
+    post_id: int
     created_at: datetime

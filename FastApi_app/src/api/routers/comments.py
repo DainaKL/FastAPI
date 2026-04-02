@@ -1,9 +1,11 @@
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.depends import get_comment_repository
+from src.infrastructure.sqlite.repositories.comment_repository import \
+    CommentRepository
 from src.schemas.comments import Comment, CommentCreate, CommentUpdate
-from src.infrastructure.sqlite.repositories.comment_repository import CommentRepository
 
 router = APIRouter(prefix="/comments", tags=["Comments"])
 
@@ -12,7 +14,7 @@ router = APIRouter(prefix="/comments", tags=["Comments"])
 async def get_comments(
     skip: int = 0,
     limit: int = 100,
-    repo: CommentRepository = Depends(get_comment_repository)
+    repo: CommentRepository = Depends(get_comment_repository),
 ):
     # Получение списка всех комментариев
     try:
@@ -26,7 +28,7 @@ async def get_comments(
 async def get_published_comments(
     skip: int = 0,
     limit: int = 100,
-    repo: CommentRepository = Depends(get_comment_repository)
+    repo: CommentRepository = Depends(get_comment_repository),
 ):
     # Получение опубликованных комментариев
     try:
@@ -38,8 +40,7 @@ async def get_published_comments(
 
 @router.get("/{comment_id}", response_model=Comment)
 async def get_comment(
-    comment_id: int,
-    repo: CommentRepository = Depends(get_comment_repository)
+    comment_id: int, repo: CommentRepository = Depends(get_comment_repository)
 ):
     # Получение комментария по ID
     comment = repo.get_by_id(comment_id)
@@ -53,7 +54,7 @@ async def get_comments_by_post(
     post_id: int,
     skip: int = 0,
     limit: int = 100,
-    repo: CommentRepository = Depends(get_comment_repository)
+    repo: CommentRepository = Depends(get_comment_repository),
 ):
     # Получение комментариев к посту
     comments = repo.get_by_post(post_id, skip=skip, limit=limit)
@@ -65,7 +66,7 @@ async def get_comments_by_author(
     author_id: int,
     skip: int = 0,
     limit: int = 100,
-    repo: CommentRepository = Depends(get_comment_repository)
+    repo: CommentRepository = Depends(get_comment_repository),
 ):
     # Получение комментариев автора
     comments = repo.get_by_author(author_id, skip=skip, limit=limit)
@@ -75,7 +76,7 @@ async def get_comments_by_author(
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=Comment)
 async def create_comment(
     comment_data: CommentCreate,
-    repo: CommentRepository = Depends(get_comment_repository)
+    repo: CommentRepository = Depends(get_comment_repository),
 ):
     # Создание нового комментария
     try:
@@ -90,11 +91,13 @@ async def create_comment(
 async def update_comment(
     comment_id: int,
     comment_data: CommentUpdate,
-    repo: CommentRepository = Depends(get_comment_repository)
+    repo: CommentRepository = Depends(get_comment_repository),
 ):
     # Обновление комментария
     try:
-        update_dict = {k: v for k, v in comment_data.model_dump().items() if v is not None}
+        update_dict = {
+            k: v for k, v in comment_data.model_dump().items() if v is not None
+        }
         updated = repo.update(comment_id, **update_dict)
         if not updated:
             raise HTTPException(status_code=404, detail="Comment not found")
@@ -105,8 +108,7 @@ async def update_comment(
 
 @router.delete("/{comment_id}")
 async def delete_comment(
-    comment_id: int,
-    repo: CommentRepository = Depends(get_comment_repository)
+    comment_id: int, repo: CommentRepository = Depends(get_comment_repository)
 ):
     # Удаление комментария
     deleted = repo.delete(comment_id)
