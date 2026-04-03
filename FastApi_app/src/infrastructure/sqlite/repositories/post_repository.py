@@ -1,30 +1,29 @@
-from typing import List
-
-from sqlalchemy import select
+from typing import List, Optional
 from sqlalchemy.orm import Session
-
-from src.infrastructure.sqlite.models import Post
-from src.infrastructure.sqlite.repositories.base import BaseRepository
+from src.infrastructure.sqlite.models.post import Post as PostModel
 
 
-class PostRepository(BaseRepository[Post]):
+class PostRepository:
     def __init__(self, session: Session):
-        super().__init__(session, Post)
+        self.session = session
 
-    def get_published(self, skip: int = 0, limit: int = 100) -> List[Post]:
-        if not skip:
-            return None
-        stmt = select(Post).where(Post.is_published).offset(skip).limit(limit)
-        return self.session.scalar(stmt).scalar_one_or_none()
+    def create(self, post: PostModel) -> PostModel:
+        self.session.add(post)
+        self.session.flush()
+        return post
 
-    def get_by_category(self, category_id: int) -> List[Post]:
-        if not category_id:
-            return None
-        stmt = select(Post).where(Post.category_id == category_id)
-        return self.session.scalar(stmt).scalar_one_or_none()
+    def get_all(self, skip: int = 0, limit: int = 100) -> List[PostModel]:
+        return self.session.query(PostModel).offset(skip).limit(limit).all()
 
-    def get_by_author(self, author_id: int) -> List[Post]:
-        if not author_id:
-            return None
-        stmt = select(Post).where(Post.author_id == author_id)
-        return self.session.scalar(stmt).scalar_one_or_none()
+    def get_by_id(self, post_id: int) -> Optional[PostModel]:
+        return self.session.query(PostModel).filter(PostModel.id == post_id).first()
+
+    def update(self, post: PostModel, data: dict) -> PostModel:
+        for key, value in data.items():
+            setattr(post, key, value)
+        self.session.flush()
+        return post
+
+    def delete(self, post: PostModel) -> None:
+        self.session.delete(post)
+        self.session.flush()

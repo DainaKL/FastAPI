@@ -1,35 +1,25 @@
-from fastapi import Depends
-from sqlalchemy.orm import Session
-
-from src.infrastructure.sqlite.database import get_db
-from src.infrastructure.sqlite.repositories.category_repository import \
-    CategoryRepository
-from src.infrastructure.sqlite.repositories.comment_repository import \
-    CommentRepository
-from src.infrastructure.sqlite.repositories.location_repository import \
-    LocationRepository
-from src.infrastructure.sqlite.repositories.post_repository import \
-    PostRepository
-from src.infrastructure.sqlite.repositories.user_repository import \
-    UserRepository
+from src.domain.user.use_cases.user_use_cases import UserUseCases
+from src.domain.post.use_cases.post_use_cases import PostUseCases
+from src.domain.comment.use_cases.comment_use_cases import CommentUseCases
+from src.domain.category.use_cases.category_use_cases import CategoryUseCases
+from src.domain.location.use_cases.location_use_cases import LocationUseCases
 
 
-# Зависимости для репозиториев
-def get_user_repository(db: Session = Depends(get_db)) -> UserRepository:
-    return UserRepository(db)
+def get_user_use_cases() -> UserUseCases:
+    return UserUseCases()
 
 
-def get_post_repository(db: Session = Depends(get_db)) -> PostRepository:
-    return PostRepository(db)
+def get_post_use_cases() -> PostUseCases:
+    return PostUseCases()
 
 
-def get_category_repository(db: Session = Depends(get_db)) -> CategoryRepository:
-    return CategoryRepository(db)
+def get_comment_use_cases() -> CommentUseCases:
+    return CommentUseCases()
 
 
-def get_location_repository(db: Session = Depends(get_db)) -> LocationRepository:
-    return LocationRepository(db)
+def get_category_use_cases() -> CategoryUseCases:
+    return CategoryUseCases()
 
 
-def get_comment_repository(db: Session = Depends(get_db)) -> CommentRepository:
-    return CommentRepository(db)
+def get_location_use_cases() -> LocationUseCases:
+    return LocationUseCases()

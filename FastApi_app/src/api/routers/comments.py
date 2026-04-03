@@ -1,10 +1,8 @@
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from src.api.depends import get_comment_repository
-from src.infrastructure.sqlite.repositories.comment_repository import \
-    CommentRepository
+from src.api.depends import get_comment_use_cases
+from src.domain.comment.use_cases.comment_use_cases import CommentUseCases
 from src.schemas.comments import Comment, CommentCreate, CommentUpdate
 
 router = APIRouter(prefix="/comments", tags=["Comments"])
@@ -14,39 +12,29 @@ router = APIRouter(prefix="/comments", tags=["Comments"])
 async def get_comments(
     skip: int = 0,
     limit: int = 100,
-    repo: CommentRepository = Depends(get_comment_repository),
+    use_cases: CommentUseCases = Depends(get_comment_use_cases),
 ):
-    # Получение списка всех комментариев
-    try:
-        comments = repo.get_all(skip=skip, limit=limit)
-        return comments
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await use_cases.get_all(skip=skip, limit=limit)
 
 
 @router.get("/published", response_model=List[Comment])
 async def get_published_comments(
     skip: int = 0,
     limit: int = 100,
-    repo: CommentRepository = Depends(get_comment_repository),
+    use_cases: CommentUseCases = Depends(get_comment_use_cases),
 ):
-    # Получение опубликованных комментариев
-    try:
-        comments = repo.get_published(skip=skip, limit=limit)
-        return comments
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await use_cases.get_published(skip=skip, limit=limit)
 
 
 @router.get("/{comment_id}", response_model=Comment)
 async def get_comment(
-    comment_id: int, repo: CommentRepository = Depends(get_comment_repository)
+    comment_id: int,
+    use_cases: CommentUseCases = Depends(get_comment_use_cases),
 ):
-    # Получение комментария по ID
-    comment = repo.get_by_id(comment_id)
-    if not comment:
+    try:
+        return await use_cases.get_by_id(comment_id)
+    except ValueError:
         raise HTTPException(status_code=404, detail="Comment not found")
-    return comment
 
 
 @router.get("/post/{post_id}", response_model=List[Comment])
@@ -54,11 +42,9 @@ async def get_comments_by_post(
     post_id: int,
     skip: int = 0,
     limit: int = 100,
-    repo: CommentRepository = Depends(get_comment_repository),
+    use_cases: CommentUseCases = Depends(get_comment_use_cases),
 ):
-    # Получение комментариев к посту
-    comments = repo.get_by_post(post_id, skip=skip, limit=limit)
-    return comments
+    return await use_cases.get_by_post(post_id, skip=skip, limit=limit)
 
 
 @router.get("/author/{author_id}", response_model=List[Comment])
@@ -66,54 +52,37 @@ async def get_comments_by_author(
     author_id: int,
     skip: int = 0,
     limit: int = 100,
-    repo: CommentRepository = Depends(get_comment_repository),
+    use_cases: CommentUseCases = Depends(get_comment_use_cases),
 ):
-    # Получение комментариев автора
-    comments = repo.get_by_author(author_id, skip=skip, limit=limit)
-    return comments
+    return await use_cases.get_by_author(author_id, skip=skip, limit=limit)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=Comment)
 async def create_comment(
     comment_data: CommentCreate,
-    repo: CommentRepository = Depends(get_comment_repository),
+    use_cases: CommentUseCases = Depends(get_comment_use_cases),
 ):
-    # Создание нового комментария
-    try:
-        comment_dict = comment_data.model_dump()
-        new_comment = repo.create(**comment_dict)
-        return new_comment
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await use_cases.create(comment_data)
 
 
 @router.put("/{comment_id}", response_model=Comment)
 async def update_comment(
     comment_id: int,
     comment_data: CommentUpdate,
-    repo: CommentRepository = Depends(get_comment_repository),
+    use_cases: CommentUseCases = Depends(get_comment_use_cases),
 ):
-    # Обновление комментария
     try:
-        update_dict = {
-            k: v for k, v in comment_data.model_dump().items() if v is not None
-        }
-        updated = repo.update(comment_id, **update_dict)
-        if not updated:
-            raise HTTPException(status_code=404, detail="Comment not found")
-        return updated
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return await use_cases.update(comment_id, comment_data)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Comment not found")
 
 
 @router.delete("/{comment_id}")
 async def delete_comment(
-    comment_id: int, repo: CommentRepository = Depends(get_comment_repository)
+    comment_id: int,
+    use_cases: CommentUseCases = Depends(get_comment_use_cases),
 ):
-    # Удаление комментария
-    deleted = repo.delete(comment_id)
     try:
-        if not deleted:
-            raise HTTPException(status_code=404, detail="Comment not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        await use_cases.delete(comment_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Comment not found")

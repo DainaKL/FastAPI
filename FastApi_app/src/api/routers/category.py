@@ -1,10 +1,8 @@
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from src.api.depends import get_category_repository
-from src.infrastructure.sqlite.repositories.category_repository import \
-    CategoryRepository
+from src.api.depends import get_category_use_cases
+from src.domain.category.use_cases.category_use_cases import CategoryUseCases
 from src.schemas.category import Category, CategoryCreate, CategoryUpdate
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
@@ -14,74 +12,59 @@ router = APIRouter(prefix="/categories", tags=["Categories"])
 async def get_categories(
     skip: int = 0,
     limit: int = 100,
-    repo: CategoryRepository = Depends(get_category_repository),
+    use_cases: CategoryUseCases = Depends(get_category_use_cases),
 ):
-    # Получение списка всех категорий
-    try:
-        categories = repo.get_all(skip=skip, limit=limit)
-        return categories
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await use_cases.get_all(skip=skip, limit=limit)
 
 
 @router.get("/{id}", response_model=Category)
 async def get_category(
-    id: int, repo: CategoryRepository = Depends(get_category_repository)
+    id: int,
+    use_cases: CategoryUseCases = Depends(get_category_use_cases),
 ):
-    # Получение категории по ID
-    category = repo.get_by_id(id)
-    if not category:
+    try:
+        return await use_cases.get_by_id(id)
+    except ValueError:
         raise HTTPException(status_code=404, detail="Category not found")
-    return category
 
 
 @router.get("/slug/{slug}", response_model=Category)
 async def get_category_by_slug(
-    slug: str, repo: CategoryRepository = Depends(get_category_repository)
+    slug: str,
+    use_cases: CategoryUseCases = Depends(get_category_use_cases),
 ):
-    # Получение категории по slug
-    category = repo.get_by_slug(slug)
-    if not category:
+    try:
+        return await use_cases.get_by_slug(slug)
+    except ValueError:
         raise HTTPException(status_code=404, detail="Category not found")
-    return category
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=Category)
 async def create_category(
     category_data: CategoryCreate,
-    repo: CategoryRepository = Depends(get_category_repository),
+    use_cases: CategoryUseCases = Depends(get_category_use_cases),
 ):
-    # Создание новой категории
-    try:
-        category_dict = category_data.model_dump()
-        new_category = repo.create(**category_dict)
-        return new_category
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await use_cases.create(category_data)
 
 
 @router.put("/{id}", response_model=Category)
 async def update_category(
     id: int,
     category_data: CategoryUpdate,
-    repo: CategoryRepository = Depends(get_category_repository),
+    use_cases: CategoryUseCases = Depends(get_category_use_cases),
 ):
-    # Обновление категории
-    update_dict = {k: v for k, v in category_data.model_dump().items() if v is not None}
-    updated = repo.update(id, **update_dict)
-    if not updated:
+    try:
+        return await use_cases.update(id, category_data)
+    except ValueError:
         raise HTTPException(status_code=404, detail="Category not found")
-    return updated
 
 
 @router.delete("/{id}")
 async def delete_category(
-    id: int, repo: CategoryRepository = Depends(get_category_repository)
+    id: int,
+    use_cases: CategoryUseCases = Depends(get_category_use_cases),
 ):
-    # Удаление категории
-    deleted = repo.delete(id)
     try:
-        if not deleted:
-            raise HTTPException(status_code=404, detail="Category not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        await use_cases.delete(id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Category not found")

@@ -1,10 +1,8 @@
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from src.api.depends import get_location_repository
-from src.infrastructure.sqlite.repositories.location_repository import \
-    LocationRepository
+from src.api.depends import get_location_use_cases
+from src.domain.location.use_cases.location_use_cases import LocationUseCases
 from src.schemas.location import Location, LocationCreate, LocationUpdate
 
 router = APIRouter(prefix="/locations", tags=["Locations"])
@@ -14,102 +12,71 @@ router = APIRouter(prefix="/locations", tags=["Locations"])
 async def get_locations(
     skip: int = 0,
     limit: int = 100,
-    repo: LocationRepository = Depends(get_location_repository),
+    use_cases: LocationUseCases = Depends(get_location_use_cases),
 ):
-    # Получение списка всех локаций
-    try:
-        locations = repo.get_all(skip=skip, limit=limit)
-        return locations
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await use_cases.get_all(skip=skip, limit=limit)
 
 
 @router.get("/published", response_model=List[Location])
 async def get_published_locations(
     skip: int = 0,
     limit: int = 100,
-    repo: LocationRepository = Depends(get_location_repository),
+    use_cases: LocationUseCases = Depends(get_location_use_cases),
 ):
-    # Получение только опубликованных локаций
-    try:
-        locations = repo.get_published(skip=skip, limit=limit)
-        return locations
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await use_cases.get_published(skip=skip, limit=limit)
 
 
 @router.get("/{location_id}", response_model=Location)
 async def get_location(
-    location_id: int, repo: LocationRepository = Depends(get_location_repository)
+    location_id: int,
+    use_cases: LocationUseCases = Depends(get_location_use_cases),
 ):
-    # Получение локации по ID
-    location = repo.get_by_id(location_id)
-    if not location:
+    try:
+        return await use_cases.get_by_id(location_id)
+    except ValueError:
         raise HTTPException(status_code=404, detail="Location not found")
-    return location
 
 
 @router.get("/name/{name}", response_model=Location)
 async def get_location_by_name(
-    name: str, repo: LocationRepository = Depends(get_location_repository)
+    name: str,
+    use_cases: LocationUseCases = Depends(get_location_use_cases),
 ):
-    # Получение локации по названию
-    location = repo.get_by_name(name)
-    if not location:
+    try:
+        return await use_cases.get_by_name(name)
+    except ValueError:
         raise HTTPException(status_code=404, detail="Location not found")
-    return location
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=Location)
 async def create_location(
     location_data: LocationCreate,
-    repo: LocationRepository = Depends(get_location_repository),
+    use_cases: LocationUseCases = Depends(get_location_use_cases),
 ):
-    # Создание новой локации
     try:
-        # Проверка на существующую локацию
-        existing = repo.get_by_name(location_data.name)
-        if existing:
-            raise HTTPException(
-                status_code=400, detail="Location with this name already exists"
-            )
-
-        location_dict = location_data.model_dump()
-        new_location = repo.create(**location_dict)
-        return new_location
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return await use_cases.create(location_data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.put("/{location_id}", response_model=Location)
 async def update_location(
     location_id: int,
     location_data: LocationUpdate,
-    repo: LocationRepository = Depends(get_location_repository),
+    use_cases: LocationUseCases = Depends(get_location_use_cases),
 ):
-    # Обновление локации
     try:
-        update_dict = {
-            k: v for k, v in location_data.model_dump().items() if v is not None
-        }
-        updated = repo.update(location_id, **update_dict)
-        if not updated:
-            raise HTTPException(status_code=404, detail="Location not found")
-        return updated
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return await use_cases.update(location_id, location_data)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Location not found")
 
 
 @router.delete("/{location_id}")
 async def delete_location(
-    location_id: int, repo: LocationRepository = Depends(get_location_repository)
+    location_id: int,
+    use_cases: LocationUseCases = Depends(get_location_use_cases),
 ):
-    # Удаление локации
-    deleted = repo.delete(location_id)
     try:
-        if not deleted:
-            raise HTTPException(status_code=404, detail="Location not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        await use_cases.delete(location_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Location not found")

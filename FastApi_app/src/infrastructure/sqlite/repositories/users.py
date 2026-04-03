@@ -4,10 +4,12 @@ from sqlalchemy import insert, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from core.exceptions.database_exceptions import (UserAlreadyExistsException,
-                                                 UserNotFoundException)
-from infrastructure.sqlite.models.users import User as UserModel
-from schemas.users import CreateUser as UserSchema
+from src.core.exceptions.database_exceptions import (
+    UserAlreadyExistsException,
+    UserNotFoundException,
+)
+from src.infrastructure.sqlite.models.users import User as UserModel
+from src.schemas.users import UserCreate as UserCreateSchema, User as UserSchema
 
 
 class UserRepository:

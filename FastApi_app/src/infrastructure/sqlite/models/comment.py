@@ -17,6 +17,5 @@ class Comment(Base):
     )
     is_published: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    # Главная проблема
     post_id: Mapped[int] = mapped_column(Integer, ForeignKey("blog_post.id"))
     author_id: Mapped[int] = mapped_column(Integer)

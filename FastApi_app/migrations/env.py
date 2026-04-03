@@ -1,13 +1,16 @@
-import sys
 from logging.config import fileConfig
-from pathlib import Path
+
+from sqlalchemy import engine_from_config
+from sqlalchemy import pool
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
-
-sys.path.append(str(Path(__file__).parent.parent))
 
 from src.infrastructure.sqlite.database import Base
+from src.infrastructure.sqlite.models.users import *
+from src.infrastructure.sqlite.models.post import *
+from src.infrastructure.sqlite.models.comment import *
+from src.infrastructure.sqlite.models.category import *
+from src.infrastructure.sqlite.models.location import *
 
 config = context.config
 
@@ -36,7 +39,11 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            render_as_batch=True,
+        )
         with context.begin_transaction():
             context.run_migrations()
 
