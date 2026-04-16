@@ -1,7 +1,9 @@
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.depends import get_comment_use_cases
+from src.core.exceptions.domain_exceptions import CommentNotFoundException
 from src.domain.comment.use_cases.comment_use_cases import CommentUseCases
 from src.schemas.comments import Comment, CommentCreate, CommentUpdate
 
@@ -33,8 +35,8 @@ async def get_comment(
 ):
     try:
         return await use_cases.get_by_id(comment_id)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Comment not found")
+    except CommentNotFoundException as e:
+        raise HTTPException(status_code=404, detail=e.get_detail())
 
 
 @router.get("/post/{post_id}", response_model=List[Comment])
@@ -73,8 +75,8 @@ async def update_comment(
 ):
     try:
         return await use_cases.update(comment_id, comment_data)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Comment not found")
+    except CommentNotFoundException as e:
+        raise HTTPException(status_code=404, detail=e.get_detail())
 
 
 @router.delete("/{comment_id}")
@@ -84,5 +86,6 @@ async def delete_comment(
 ):
     try:
         await use_cases.delete(comment_id)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Comment not found")
+        return {"message": "Comment deleted"}
+    except CommentNotFoundException as e:
+        raise HTTPException(status_code=404, detail=e.get_detail())

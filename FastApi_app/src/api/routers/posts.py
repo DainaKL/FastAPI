@@ -1,7 +1,9 @@
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.depends import get_post_use_cases
+from src.core.exceptions.domain_exceptions import PostNotFoundException
 from src.domain.post.use_cases.post_use_cases import PostUseCases
 from src.schemas.posts import Post, PostCreate, PostUpdate
 
@@ -24,8 +26,8 @@ async def get_post(
 ):
     try:
         return await use_cases.get_by_id(id)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Post not found")
+    except PostNotFoundException as e:
+        raise HTTPException(status_code=404, detail=e.get_detail())
 
 
 @router.post("/posts", status_code=status.HTTP_201_CREATED, response_model=Post)
@@ -44,8 +46,8 @@ async def update_post(
 ):
     try:
         return await use_cases.update(id, post_data)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Post not found")
+    except PostNotFoundException as e:
+        raise HTTPException(status_code=404, detail=e.get_detail())
 
 
 @router.delete("/posts/{id}")
@@ -55,5 +57,6 @@ async def delete_post(
 ):
     try:
         await use_cases.delete(id)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Post not found")
+        return {"message": "Post deleted"}
+    except PostNotFoundException as e:
+        raise HTTPException(status_code=404, detail=e.get_detail())

@@ -1,7 +1,10 @@
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.depends import get_user_use_cases
+from src.core.exceptions.domain_exceptions import (
+    UserLoginIsNotUniqueException, UserNotFoundByLoginException)
 from src.domain.user.use_cases.user_use_cases import UserUseCases
 from src.schemas.users import User, UserCreate, UserUpdate
 
@@ -24,8 +27,8 @@ async def get_user(
 ):
     try:
         return await use_cases.get_by_id(user_id)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="User not found")
+    except UserNotFoundByLoginException as e:
+        raise HTTPException(status_code=404, detail=e.get_detail())
 
 
 @router.get("/login/{login}", response_model=User)
@@ -35,8 +38,8 @@ async def get_user_by_login(
 ):
     try:
         return await use_cases.get_by_login(login)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="User not found")
+    except UserNotFoundByLoginException as e:
+        raise HTTPException(status_code=404, detail=e.get_detail())
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=User)
@@ -46,8 +49,8 @@ async def create_user(
 ):
     try:
         return await use_cases.create(user_data)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except UserLoginIsNotUniqueException as e:
+        raise HTTPException(status_code=409, detail=e.get_detail())
 
 
 @router.put("/{user_id}", response_model=User)
@@ -58,8 +61,8 @@ async def update_user(
 ):
     try:
         return await use_cases.update(user_id, user_data)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="User not found")
+    except UserNotFoundByLoginException as e:
+        raise HTTPException(status_code=404, detail=e.get_detail())
 
 
 @router.delete("/{user_id}")
@@ -69,5 +72,6 @@ async def delete_user(
 ):
     try:
         await use_cases.delete(user_id)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="User not found")
+        return {"message": "User deleted"}
+    except UserNotFoundByLoginException as e:
+        raise HTTPException(status_code=404, detail=e.get_detail())
