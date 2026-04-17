@@ -1,76 +1,53 @@
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import Session
+from typing import Type
 
-from src.core.exceptions.database_exceptions import (
-    DatabaseOperationException, UserAlreadyExistsException,
-    UserNotFoundException)
+from sqlalchemy import insert, select
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+
 from src.infrastructure.sqlite.models.users import User as UserModel
+from src.schemas.users import UserCreate as UserSchema
+from src.core.exceptions.database_exceptions import UserNotFoundException, UserAlreadyExistsException
 
 
 class UserRepository:
-    def __init__(self, session: Session):
-        self.session = session
+    def __init__(self):
+        self._model: Type[UserModel] = UserModel
 
-    def get_by_login(self, login: str) -> UserModel:
-        try:
-            stmt = select(UserModel).where(UserModel.login == login)
-            user = self.session.execute(stmt).scalar_one_or_none()
-            if not user:
-                raise UserNotFoundException(login=login)
-            return user
-        except UserNotFoundException:
-            raise
-        except SQLAlchemyError as e:
-            raise DatabaseOperationException("get_by_login", str(e))
+    def get_by_id(self, session: Session, user_id: int) -> UserModel:
+        query = select(self._model).where(self._model.id == user_id)
+        user = session.scalar(query)
+        if not user:
+            raise UserNotFoundException(user_id=user_id)
+        return user
 
-    def get_by_id(self, user_id: int) -> UserModel:
-        try:
-            user = self.session.get(UserModel, user_id)
-            if not user:
-                raise UserNotFoundException(user_id=user_id)
-            return user
-        except UserNotFoundException:
-            raise
-        except SQLAlchemyError as e:
-            raise DatabaseOperationException("get_by_id", str(e))
+    def get_by_login(self, session: Session, login: str) -> UserModel:
+        query = select(self._model).where(self._model.login == login)
+        user = session.scalar(query)
+        if not user:
+            raise UserNotFoundException(login=login)
+        return user
 
-    def create(self, login: str, password: str) -> UserModel:
+    def get_all(self, session: Session, skip: int = 0, limit: int = 100):
+        query = select(self._model).offset(skip).limit(limit)
+        return list(session.scalars(query).all())
+
+    def create(self, session: Session, user: UserSchema) -> UserModel:
+        query = insert(self._model).values(user.model_dump()).returning(self._model)
         try:
-            user = UserModel(login=login, password=password)
-            self.session.add(user)
-            self.session.flush()
-            self.session.refresh(user)
-            return user
+            return session.scalar(query)
         except IntegrityError:
-            self.session.rollback()
-            raise UserAlreadyExistsException(login=login)
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            raise DatabaseOperationException("create", str(e))
+            raise UserAlreadyExistsException(login=user.login)
 
-    def update(self, user_id: int, **kwargs) -> UserModel:
-        try:
-            user = self.get_by_id(user_id)
-            for key, value in kwargs.items():
-                if hasattr(user, key):
-                    setattr(user, key, value)
-            self.session.flush()
-            self.session.refresh(user)
-            return user
-        except UserNotFoundException:
-            raise
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            raise DatabaseOperationException("update", str(e))
+    def update(self, session: Session, user_id: int, **kwargs) -> UserModel:
+        user = self.get_by_id(session, user_id)
+        for key, value in kwargs.items():
+            if hasattr(user, key):
+                setattr(user, key, value)
+        session.flush()
+        session.refresh(user)
+        return user
 
-    def delete(self, user_id: int) -> None:
-        try:
-            user = self.get_by_id(user_id)
-            self.session.delete(user)
-            self.session.flush()
-        except UserNotFoundException:
-            raise
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            raise DatabaseOperationException("delete", str(e))
+    def delete(self, session: Session, user_id: int) -> None:
+        user = self.get_by_id(session, user_id)
+        session.delete(user)
+        session.flush()

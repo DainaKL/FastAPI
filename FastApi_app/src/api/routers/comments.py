@@ -1,11 +1,10 @@
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.depends import get_comment_use_cases
-from src.core.exceptions.domain_exceptions import CommentNotFoundException
 from src.domain.comment.use_cases.comment_use_cases import CommentUseCases
 from src.schemas.comments import Comment, CommentCreate, CommentUpdate
+from src.core.exceptions.domain_exceptions import CommentNotFoundException
 
 router = APIRouter(prefix="/comments", tags=["Comments"])
 
@@ -86,6 +85,6 @@ async def delete_comment(
 ):
     try:
         await use_cases.delete(comment_id)
-        return {"message": "Comment deleted"}
+        return {"status": "success", "message": f"Comment {comment_id} deleted"}
     except CommentNotFoundException as e:
         raise HTTPException(status_code=404, detail=e.get_detail())

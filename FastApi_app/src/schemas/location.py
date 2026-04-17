@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from pydantic import field_validator
 
 from src.schemas.base import BaseSchema
@@ -15,7 +14,9 @@ class LocationBase(BaseSchema):
         if len(v) < 2:
             raise ValueError("Название локации должно содержать минимум 2 символа")
         if len(v) > 256:
-            raise ValueError("Название локации должно содержать максимум 256 символов")
+            raise ValueError(
+                "Название локации должно содержать максимум 256 символов"
+            )
         return v
 
 

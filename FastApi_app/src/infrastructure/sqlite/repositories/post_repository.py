@@ -1,73 +1,47 @@
-from typing import List
+from typing import Type
 
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy import insert, select, update, delete
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
-from src.core.exceptions.database_exceptions import (
-    DatabaseOperationException, PostNotFoundException)
 from src.infrastructure.sqlite.models.post import Post as PostModel
+from src.schemas.posts import PostCreate as PostSchema
+from src.core.exceptions.database_exceptions import PostNotFoundException, DatabaseOperationException
 
 
 class PostRepository:
-    def __init__(self, session: Session):
-        self.session = session
+    def __init__(self):
+        self._model: Type[PostModel] = PostModel
 
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[PostModel]:
-        try:
-            stmt = select(PostModel).offset(skip).limit(limit)
-            return list(self.session.execute(stmt).scalars().all())
-        except SQLAlchemyError as e:
-            raise DatabaseOperationException("get_all", str(e))
+    def get_by_id(self, session: Session, post_id: int) -> PostModel:
+        if post_id <= 0:
+            raise PostNotFoundException(post_id=post_id)
+        query = select(self._model).where(self._model.id == post_id)
+        post = session.scalar(query)
+        if not post:
+            raise PostNotFoundException(post_id=post_id)
+        return post
 
-    def get_by_id(self, post_id: int) -> PostModel:
-        try:
-            stmt = select(PostModel).where(PostModel.id == post_id)
-            post = self.session.execute(stmt).scalar_one_or_none()
-            if not post:
-                raise PostNotFoundException(post_id=post_id)
-            return post
-        except PostNotFoundException:
-            raise
-        except SQLAlchemyError as e:
-            raise DatabaseOperationException("get_by_id", str(e))
+    def get_all(self, session: Session, skip: int = 0, limit: int = 100):
+        query = select(self._model).offset(skip).limit(limit)
+        return list(session.scalars(query).all())
 
-    def create(self, **kwargs) -> PostModel:
+    def create(self, session: Session, post: PostSchema) -> PostModel:
+        query = insert(self._model).values(post.model_dump()).returning(self._model)
         try:
-            post = PostModel(**kwargs)
-            self.session.add(post)
-            self.session.flush()
-            self.session.refresh(post)
-            return post
+            return session.scalar(query)
         except IntegrityError as e:
-            self.session.rollback()
-            raise DatabaseOperationException("create", str(e))
-        except SQLAlchemyError as e:
-            self.session.rollback()
             raise DatabaseOperationException("create", str(e))
 
-    def update(self, post_id: int, **kwargs) -> PostModel:
-        try:
-            post = self.get_by_id(post_id)
-            for key, value in kwargs.items():
-                if hasattr(post, key):
-                    setattr(post, key, value)
-            self.session.flush()
-            self.session.refresh(post)
-            return post
-        except PostNotFoundException:
-            raise
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            raise DatabaseOperationException("update", str(e))
+    def update(self, session: Session, post_id: int, **kwargs) -> PostModel:
+        query = update(self._model).where(self._model.id == post_id).values(**kwargs).returning(self._model)
+        post = session.scalar(query)
+        if not post:
+            raise PostNotFoundException(post_id=post_id)
+        return post
 
-    def delete(self, post_id: int) -> None:
-        try:
-            post = self.get_by_id(post_id)
-            self.session.delete(post)
-            self.session.flush()
-        except PostNotFoundException:
-            raise
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            raise DatabaseOperationException("delete", str(e))
+    def delete(self, session: Session, post_id: int) -> None:
+        query = delete(self._model).where(self._model.id == post_id)
+        result = session.execute(query)
+        if result.rowcount == 0:
+            raise PostNotFoundException(post_id=post_id)

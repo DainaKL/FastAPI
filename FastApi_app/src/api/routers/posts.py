@@ -1,11 +1,10 @@
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.depends import get_post_use_cases
-from src.core.exceptions.domain_exceptions import PostNotFoundException
 from src.domain.post.use_cases.post_use_cases import PostUseCases
 from src.schemas.posts import Post, PostCreate, PostUpdate
+from src.core.exceptions.domain_exceptions import PostNotFoundException
 
 router = APIRouter(prefix="/base", tags=["Base APIs"])
 
@@ -57,6 +56,6 @@ async def delete_post(
 ):
     try:
         await use_cases.delete(id)
-        return {"message": "Post deleted"}
+        return {"status": "success", "message": f"Post {id} deleted"}
     except PostNotFoundException as e:
         raise HTTPException(status_code=404, detail=e.get_detail())

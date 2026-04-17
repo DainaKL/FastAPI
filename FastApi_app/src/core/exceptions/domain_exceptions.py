@@ -56,7 +56,7 @@ class LocationNotFoundException(BaseDomainException):
         detail = self._exception_text_template.format(location_id=location_id)
         super().__init__(detail=detail)
 
-
+    
 class LocationNotFoundByNameException(BaseDomainException):
     _exception_text_template = "Локация {name} не найдена"
 

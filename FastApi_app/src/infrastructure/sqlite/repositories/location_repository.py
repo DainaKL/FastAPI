@@ -1,98 +1,61 @@
-from typing import List, Optional
+from typing import Type
 
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy import insert, select, update, delete
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
-from src.core.exceptions.database_exceptions import (
-    DatabaseOperationException, LocationAlreadyExistsException,
-    LocationNotFoundException)
 from src.infrastructure.sqlite.models.location import Location as LocationModel
+from src.schemas.location import LocationCreate as LocationSchema
+from src.core.exceptions.database_exceptions import LocationNotFoundException, LocationAlreadyExistsException, DatabaseOperationException
 
 
 class LocationRepository:
-    def __init__(self, session: Session):
-        self.session = session
+    def __init__(self):
+        self._model: Type[LocationModel] = LocationModel
 
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[LocationModel]:
-        try:
-            stmt = select(LocationModel).offset(skip).limit(limit)
-            return list(self.session.execute(stmt).scalars().all())
-        except SQLAlchemyError as e:
-            raise DatabaseOperationException("get_all", str(e))
+    def get_by_id(self, session: Session, location_id: int) -> LocationModel:
+        if location_id <= 0:
+            raise LocationNotFoundException(location_id=location_id)
+        query = select(self._model).where(self._model.id == location_id)
+        location = session.scalar(query)
+        if not location:
+            raise LocationNotFoundException(location_id=location_id)
+        return location
 
-    def get_published(self, skip: int = 0, limit: int = 100) -> List[LocationModel]:
-        try:
-            stmt = (
-                select(LocationModel)
-                .where(LocationModel.is_published == True)
-                .offset(skip)
-                .limit(limit)
-            )
-            return list(self.session.execute(stmt).scalars().all())
-        except SQLAlchemyError as e:
-            raise DatabaseOperationException("get_published", str(e))
+    def get_by_name(self, session: Session, name: str):
+        if not name:
+            return None
+        query = select(self._model).where(self._model.name == name)
+        return session.scalar(query)
 
-    def get_by_id(self, location_id: int) -> LocationModel:
-        try:
-            stmt = select(LocationModel).where(LocationModel.id == location_id)
-            location = self.session.execute(stmt).scalar_one_or_none()
-            if not location:
-                raise LocationNotFoundException(location_id=location_id)
-            return location
-        except LocationNotFoundException:
-            raise
-        except SQLAlchemyError as e:
-            raise DatabaseOperationException("get_by_id", str(e))
+    def get_all(self, session: Session, skip: int = 0, limit: int = 100):
+        query = select(self._model).offset(skip).limit(limit)
+        return list(session.scalars(query).all())
 
-    def get_by_name(self, name: str) -> Optional[LocationModel]:
-        try:
-            stmt = select(LocationModel).where(LocationModel.name == name)
-            return self.session.execute(stmt).scalar_one_or_none()
-        except SQLAlchemyError as e:
-            raise DatabaseOperationException("get_by_name", str(e))
+    def get_published(self, session: Session, skip: int = 0, limit: int = 100):
+        query = select(self._model).where(self._model.is_published == True).offset(skip).limit(limit)
+        return list(session.scalars(query).all())
 
-    def create(self, **kwargs) -> LocationModel:
+    def create(self, session: Session, location: LocationSchema) -> LocationModel:
+        existing = self.get_by_name(session, location.name)
+        if existing:
+            raise LocationAlreadyExistsException(name=location.name)
+
+        query = insert(self._model).values(location.model_dump()).returning(self._model)
         try:
-            existing = self.get_by_name(kwargs.get("name"))
-            if existing:
-                raise LocationAlreadyExistsException(name=kwargs.get("name"))
-            location = LocationModel(**kwargs)
-            self.session.add(location)
-            self.session.flush()
-            self.session.refresh(location)
-            return location
-        except LocationAlreadyExistsException:
-            raise
+            return session.scalar(query)
         except IntegrityError as e:
-            self.session.rollback()
-            raise DatabaseOperationException("create", str(e))
-        except SQLAlchemyError as e:
-            self.session.rollback()
             raise DatabaseOperationException("create", str(e))
 
-    def update(self, location_id: int, **kwargs) -> LocationModel:
-        try:
-            location = self.get_by_id(location_id)
-            for key, value in kwargs.items():
-                if hasattr(location, key):
-                    setattr(location, key, value)
-            self.session.flush()
-            self.session.refresh(location)
-            return location
-        except LocationNotFoundException:
-            raise
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            raise DatabaseOperationException("update", str(e))
+    def update(self, session: Session, location_id: int, **kwargs) -> LocationModel:
+        query = update(self._model).where(self._model.id == location_id).values(**kwargs).returning(self._model)
+        location = session.scalar(query)
+        if not location:
+            raise LocationNotFoundException(location_id=location_id)
+        return location
 
-    def delete(self, location_id: int) -> None:
-        try:
-            location = self.get_by_id(location_id)
-            self.session.delete(location)
-            self.session.flush()
-        except LocationNotFoundException:
-            raise
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            raise DatabaseOperationException("delete", str(e))
+    def delete(self, session: Session, location_id: int) -> None:
+        query = delete(self._model).where(self._model.id == location_id)
+        result = session.execute(query)
+        if result.rowcount == 0:
+            raise LocationNotFoundException(location_id=location_id)

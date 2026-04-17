@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from pydantic import field_validator
 
 from src.schemas.base import BaseSchema

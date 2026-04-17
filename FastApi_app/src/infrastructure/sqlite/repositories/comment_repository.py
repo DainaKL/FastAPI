@@ -1,113 +1,59 @@
-from typing import List
+from typing import Type
 
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy import insert, select, update, delete
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
-from src.core.exceptions.database_exceptions import (
-    CommentNotFoundException, DatabaseOperationException)
 from src.infrastructure.sqlite.models.comment import Comment as CommentModel
+from src.schemas.comments import CommentCreate as CommentSchema
+from src.core.exceptions.database_exceptions import CommentNotFoundException, DatabaseOperationException
 
 
 class CommentRepository:
-    def __init__(self, session: Session):
-        self.session = session
+    def __init__(self):
+        self._model: Type[CommentModel] = CommentModel
 
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[CommentModel]:
-        try:
-            stmt = select(CommentModel).offset(skip).limit(limit)
-            return list(self.session.execute(stmt).scalars().all())
-        except SQLAlchemyError as e:
-            raise DatabaseOperationException("get_all", str(e))
+    def get_by_id(self, session: Session, comment_id: int) -> CommentModel:
+        if comment_id <= 0:
+            raise CommentNotFoundException(comment_id=comment_id)
+        query = select(self._model).where(self._model.id == comment_id)
+        comment = session.scalar(query)
+        if not comment:
+            raise CommentNotFoundException(comment_id=comment_id)
+        return comment
 
-    def get_published(self, skip: int = 0, limit: int = 100) -> List[CommentModel]:
-        try:
-            stmt = (
-                select(CommentModel)
-                .where(CommentModel.is_published == True)
-                .offset(skip)
-                .limit(limit)
-            )
-            return list(self.session.execute(stmt).scalars().all())
-        except SQLAlchemyError as e:
-            raise DatabaseOperationException("get_published", str(e))
+    def get_all(self, session: Session, skip: int = 0, limit: int = 100):
+        query = select(self._model).offset(skip).limit(limit)
+        return list(session.scalars(query).all())
 
-    def get_by_id(self, comment_id: int) -> CommentModel:
-        try:
-            stmt = select(CommentModel).where(CommentModel.id == comment_id)
-            comment = self.session.execute(stmt).scalar_one_or_none()
-            if not comment:
-                raise CommentNotFoundException(comment_id=comment_id)
-            return comment
-        except CommentNotFoundException:
-            raise
-        except SQLAlchemyError as e:
-            raise DatabaseOperationException("get_by_id", str(e))
+    def get_published(self, session: Session, skip: int = 0, limit: int = 100):
+        query = select(self._model).where(self._model.is_published == True).offset(skip).limit(limit)
+        return list(session.scalars(query).all())
 
-    def get_by_post(
-        self, post_id: int, skip: int = 0, limit: int = 100
-    ) -> List[CommentModel]:
-        try:
-            stmt = (
-                select(CommentModel)
-                .where(CommentModel.post_id == post_id)
-                .offset(skip)
-                .limit(limit)
-            )
-            return list(self.session.execute(stmt).scalars().all())
-        except SQLAlchemyError as e:
-            raise DatabaseOperationException("get_by_post", str(e))
+    def get_by_post(self, session: Session, post_id: int, skip: int = 0, limit: int = 100):
+        query = select(self._model).where(self._model.post_id == post_id).offset(skip).limit(limit)
+        return list(session.scalars(query).all())
 
-    def get_by_author(
-        self, author_id: int, skip: int = 0, limit: int = 100
-    ) -> List[CommentModel]:
-        try:
-            stmt = (
-                select(CommentModel)
-                .where(CommentModel.author_id == author_id)
-                .offset(skip)
-                .limit(limit)
-            )
-            return list(self.session.execute(stmt).scalars().all())
-        except SQLAlchemyError as e:
-            raise DatabaseOperationException("get_by_author", str(e))
+    def get_by_author(self, session: Session, author_id: int, skip: int = 0, limit: int = 100):
+        query = select(self._model).where(self._model.author_id == author_id).offset(skip).limit(limit)
+        return list(session.scalars(query).all())
 
-    def create(self, **kwargs) -> CommentModel:
+    def create(self, session: Session, comment: CommentSchema) -> CommentModel:
+        query = insert(self._model).values(comment.model_dump()).returning(self._model)
         try:
-            comment = CommentModel(**kwargs)
-            self.session.add(comment)
-            self.session.flush()
-            self.session.refresh(comment)
-            return comment
+            return session.scalar(query)
         except IntegrityError as e:
-            self.session.rollback()
-            raise DatabaseOperationException("create", str(e))
-        except SQLAlchemyError as e:
-            self.session.rollback()
             raise DatabaseOperationException("create", str(e))
 
-    def update(self, comment_id: int, **kwargs) -> CommentModel:
-        try:
-            comment = self.get_by_id(comment_id)
-            for key, value in kwargs.items():
-                if hasattr(comment, key):
-                    setattr(comment, key, value)
-            self.session.flush()
-            self.session.refresh(comment)
-            return comment
-        except CommentNotFoundException:
-            raise
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            raise DatabaseOperationException("update", str(e))
+    def update(self, session: Session, comment_id: int, **kwargs) -> CommentModel:
+        query = update(self._model).where(self._model.id == comment_id).values(**kwargs).returning(self._model)
+        comment = session.scalar(query)
+        if not comment:
+            raise CommentNotFoundException(comment_id=comment_id)
+        return comment
 
-    def delete(self, comment_id: int) -> None:
-        try:
-            comment = self.get_by_id(comment_id)
-            self.session.delete(comment)
-            self.session.flush()
-        except CommentNotFoundException:
-            raise
-        except SQLAlchemyError as e:
-            self.session.rollback()
-            raise DatabaseOperationException("delete", str(e))
+    def delete(self, session: Session, comment_id: int) -> None:
+        query = delete(self._model).where(self._model.id == comment_id)
+        result = session.execute(query)
+        if result.rowcount == 0:
+            raise CommentNotFoundException(comment_id=comment_id)
