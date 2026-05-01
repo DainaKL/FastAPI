@@ -16,8 +16,13 @@ class GetCommentsByPostUseCase:
     async def execute(self, post_id: int, skip: int = 0, limit: int = 100):
         try:
             with self._database.session() as session:
-                comments = self._repo.get_by_post(session=session, post_id=post_id, skip=skip, limit=limit)
-                return [CommentSchema.model_validate(c, from_attributes=True) for c in comments]
+                comments = self._repo.get_by_post(
+                    session=session, post_id=post_id, skip=skip, limit=limit
+                )
+                return [
+                    CommentSchema.model_validate(c, from_attributes=True)
+                    for c in comments
+                ]
         except DatabaseOperationException as e:
             logger.error(e.get_detail())
             raise

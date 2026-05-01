@@ -28,9 +28,13 @@ class UpdateUserUseCase:
                 if data.login:
                     update_dict["login"] = data.login
                 if data.password:
-                    update_dict["password"] = hashlib.sha256(data.password.encode()).hexdigest()
+                    update_dict["password"] = hashlib.sha256(
+                        data.password.encode()
+                    ).hexdigest()
 
-                updated = self._repo.update(session=session, user_id=user_id, **update_dict)
+                updated = self._repo.update(
+                    session=session, user_id=user_id, **update_dict
+                )
                 return UserSchema.model_validate(updated, from_attributes=True)
         except UserNotFoundByLoginException as e:
             raise e

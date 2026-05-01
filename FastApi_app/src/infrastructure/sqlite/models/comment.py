@@ -17,5 +17,9 @@ class Comment(Base):
     )
     is_published: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    post_id: Mapped[int] = mapped_column(Integer, ForeignKey("blog_post.id", ondelete="CASCADE"))
-    author_id: Mapped[int] = mapped_column(Integer, ForeignKey("auth_user.id", ondelete="CASCADE"))
+    post_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("blog_post.id", ondelete="CASCADE")
+    )
+    author_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("auth_user.id", ondelete="CASCADE")
+    )

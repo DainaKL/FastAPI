@@ -1,7 +1,9 @@
 import logging
 
 from src.infrastructure.sqlite.database import database
-from src.infrastructure.sqlite.repositories.category_repository import CategoryRepository
+from src.infrastructure.sqlite.repositories.category_repository import (
+    CategoryRepository,
+)
 from src.schemas.category import Category as CategorySchema
 from src.core.exceptions.database_exceptions import CategoryNotFoundException
 from src.core.exceptions.domain_exceptions import CategoryNotFoundBySlugException

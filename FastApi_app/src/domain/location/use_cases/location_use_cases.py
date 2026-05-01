@@ -1,5 +1,7 @@
 from src.domain.location.use_cases.get_locations import GetLocationsUseCase
-from src.domain.location.use_cases.get_published_locations import GetPublishedLocationsUseCase
+from src.domain.location.use_cases.get_published_locations import (
+    GetPublishedLocationsUseCase,
+)
 from src.domain.location.use_cases.get_location import GetLocationUseCase
 from src.domain.location.use_cases.get_location_by_name import GetLocationByNameUseCase
 from src.domain.location.use_cases.create_location import CreateLocationUseCase

@@ -1,8 +1,12 @@
 from src.domain.comment.use_cases.get_comments import GetCommentsUseCase
-from src.domain.comment.use_cases.get_published_comments import GetPublishedCommentsUseCase
+from src.domain.comment.use_cases.get_published_comments import (
+    GetPublishedCommentsUseCase,
+)
 from src.domain.comment.use_cases.get_comment import GetCommentUseCase
 from src.domain.comment.use_cases.get_comments_by_post import GetCommentsByPostUseCase
-from src.domain.comment.use_cases.get_comments_by_author import GetCommentsByAuthorUseCase
+from src.domain.comment.use_cases.get_comments_by_author import (
+    GetCommentsByAuthorUseCase,
+)
 from src.domain.comment.use_cases.create_comment import CreateCommentUseCase
 from src.domain.comment.use_cases.update_comment import UpdateCommentUseCase
 from src.domain.comment.use_cases.delete_comment import DeleteCommentUseCase

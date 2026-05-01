@@ -4,7 +4,9 @@ from src.infrastructure.sqlite.database import database
 from src.infrastructure.sqlite.repositories.post_repository import PostRepository
 from src.schemas.posts import Post as PostSchema
 from src.core.exceptions.database_exceptions import PostNotFoundException
-from src.core.exceptions.domain_exceptions import PostNotFoundException as DomainPostNotFoundException
+from src.core.exceptions.domain_exceptions import (
+    PostNotFoundException as DomainPostNotFoundException,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -1,15 +1,18 @@
-from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.depends import get_comment_use_cases
 from src.domain.comment.use_cases.comment_use_cases import CommentUseCases
 from src.schemas.comments import Comment, CommentCreate, CommentUpdate
-from src.core.exceptions.domain_exceptions import CommentNotFoundException
+from src.core.exceptions.domain_exceptions import (
+    CommentNotFoundException,
+    UserNotFoundByLoginException,
+    PostNotFoundException,
+)
 
 router = APIRouter(prefix="/comments", tags=["Comments"])
 
 
-@router.get("/", response_model=List[Comment])
+@router.get("/", response_model=list[Comment])
 async def get_comments(
     skip: int = 0,
     limit: int = 100,
@@ -18,7 +21,7 @@ async def get_comments(
     return await use_cases.get_all(skip=skip, limit=limit)
 
 
-@router.get("/published", response_model=List[Comment])
+@router.get("/published", response_model=list[Comment])
 async def get_published_comments(
     skip: int = 0,
     limit: int = 100,
@@ -35,10 +38,12 @@ async def get_comment(
     try:
         return await use_cases.get_by_id(comment_id)
     except CommentNotFoundException as e:
-        raise HTTPException(status_code=404, detail=e.get_detail())
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
+        )
 
 
-@router.get("/post/{post_id}", response_model=List[Comment])
+@router.get("/post/{post_id}", response_model=list[Comment])
 async def get_comments_by_post(
     post_id: int,
     skip: int = 0,
@@ -48,7 +53,7 @@ async def get_comments_by_post(
     return await use_cases.get_by_post(post_id, skip=skip, limit=limit)
 
 
-@router.get("/author/{author_id}", response_model=List[Comment])
+@router.get("/author/{author_id}", response_model=list[Comment])
 async def get_comments_by_author(
     author_id: int,
     skip: int = 0,
@@ -63,7 +68,16 @@ async def create_comment(
     comment_data: CommentCreate,
     use_cases: CommentUseCases = Depends(get_comment_use_cases),
 ):
-    return await use_cases.create(comment_data)
+    try:
+        return await use_cases.create(comment_data)
+    except UserNotFoundByLoginException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
+        )
+    except PostNotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
+        )
 
 
 @router.put("/{comment_id}", response_model=Comment)
@@ -75,7 +89,9 @@ async def update_comment(
     try:
         return await use_cases.update(comment_id, comment_data)
     except CommentNotFoundException as e:
-        raise HTTPException(status_code=404, detail=e.get_detail())
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
+        )
 
 
 @router.delete("/{comment_id}")
@@ -87,4 +103,6 @@ async def delete_comment(
         await use_cases.delete(comment_id)
         return {"status": "success", "message": f"Comment {comment_id} deleted"}
     except CommentNotFoundException as e:
-        raise HTTPException(status_code=404, detail=e.get_detail())
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
+        )

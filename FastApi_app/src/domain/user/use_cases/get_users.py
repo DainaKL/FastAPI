@@ -17,7 +17,9 @@ class GetUsersUseCase:
         try:
             with self._database.session() as session:
                 users = self._repo.get_all(session=session, skip=skip, limit=limit)
-                return [UserSchema.model_validate(u, from_attributes=True) for u in users]
+                return [
+                    UserSchema.model_validate(u, from_attributes=True) for u in users
+                ]
         except DatabaseOperationException as e:
             logger.error(e.get_detail())
             raise

@@ -4,7 +4,9 @@ from src.infrastructure.sqlite.database import database
 from src.infrastructure.sqlite.repositories.comment_repository import CommentRepository
 from src.schemas.comments import Comment as CommentSchema
 from src.core.exceptions.database_exceptions import CommentNotFoundException
-from src.core.exceptions.domain_exceptions import CommentNotFoundException as DomainCommentNotFoundException
+from src.core.exceptions.domain_exceptions import (
+    CommentNotFoundException as DomainCommentNotFoundException,
+)
 
 logger = logging.getLogger(__name__)
 

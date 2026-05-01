@@ -1,10 +1,14 @@
 import logging
 
 from src.infrastructure.sqlite.database import database
-from src.infrastructure.sqlite.repositories.location_repository import LocationRepository
+from src.infrastructure.sqlite.repositories.location_repository import (
+    LocationRepository,
+)
 from src.schemas.location import Location as LocationSchema, LocationCreate
 from src.core.exceptions.database_exceptions import DatabaseOperationException
-from src.core.exceptions.domain_exceptions import LocationAlreadyExistsException as DomainLocationAlreadyExistsException
+from src.core.exceptions.domain_exceptions import (
+    LocationAlreadyExistsException as DomainLocationAlreadyExistsException,
+)
 
 logger = logging.getLogger(__name__)
 

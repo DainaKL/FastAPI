@@ -17,7 +17,10 @@ class GetCommentsUseCase:
         try:
             with self._database.session() as session:
                 comments = self._repo.get_all(session=session, skip=skip, limit=limit)
-                return [CommentSchema.model_validate(c, from_attributes=True) for c in comments]
+                return [
+                    CommentSchema.model_validate(c, from_attributes=True)
+                    for c in comments
+                ]
         except DatabaseOperationException as e:
             logger.error(e.get_detail())
             raise

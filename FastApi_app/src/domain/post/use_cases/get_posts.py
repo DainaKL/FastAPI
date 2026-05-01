@@ -17,7 +17,9 @@ class GetPostsUseCase:
         try:
             with self._database.session() as session:
                 posts = self._repo.get_all(session=session, skip=skip, limit=limit)
-                return [PostSchema.model_validate(p, from_attributes=True) for p in posts]
+                return [
+                    PostSchema.model_validate(p, from_attributes=True) for p in posts
+                ]
         except DatabaseOperationException as e:
             logger.error(e.get_detail())
             raise

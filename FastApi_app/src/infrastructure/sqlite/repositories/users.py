@@ -5,7 +5,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.core.exceptions.database_exceptions import (
-    UserAlreadyExistsException, UserNotFoundException)
+    UserAlreadyExistsException,
+    UserNotFoundException,
+)
 from src.infrastructure.sqlite.models.users import User as UserModel
 from src.schemas.users import User as UserSchema
 
