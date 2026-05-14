@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from src.api.depends import get_location_use_cases
 from src.domain.location.use_cases.location_use_cases import LocationUseCases
 from src.schemas.location import Location, LocationCreate, LocationUpdate
+from src.core.exceptions.api_exceptions import NotFoundException, ConflictException
 from src.core.exceptions.domain_exceptions import (
     LocationNotFoundException,
     LocationNotFoundByNameException,
@@ -38,9 +39,7 @@ async def get_location(
     try:
         return await use_cases.get_by_id(location_id)
     except LocationNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
-        )
+        raise NotFoundException(detail=e.get_detail())
 
 
 @router.get("/name/{name}", response_model=Location)
@@ -51,9 +50,7 @@ async def get_location_by_name(
     try:
         return await use_cases.get_by_name(name)
     except LocationNotFoundByNameException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
-        )
+        raise NotFoundException(detail=e.get_detail())
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=Location)
@@ -64,7 +61,7 @@ async def create_location(
     try:
         return await use_cases.create(location_data)
     except LocationAlreadyExistsException as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=e.get_detail())
+        raise ConflictException(detail=e.get_detail())
 
 
 @router.put("/{location_id}", response_model=Location)
@@ -76,9 +73,7 @@ async def update_location(
     try:
         return await use_cases.update(location_id, location_data)
     except LocationNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
-        )
+        raise NotFoundException(detail=e.get_detail())
 
 
 @router.delete("/{location_id}")
@@ -90,6 +85,4 @@ async def delete_location(
         await use_cases.delete(location_id)
         return {"status": "success", "message": f"Location {location_id} deleted"}
     except LocationNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
-        )
+        raise NotFoundException(detail=e.get_detail())

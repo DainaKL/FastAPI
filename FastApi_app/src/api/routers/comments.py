@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from src.api.depends import get_comment_use_cases
 from src.domain.comment.use_cases.comment_use_cases import CommentUseCases
 from src.schemas.comments import Comment, CommentCreate, CommentUpdate
+from src.core.exceptions.api_exceptions import NotFoundException
 from src.core.exceptions.domain_exceptions import (
     CommentNotFoundException,
     UserNotFoundByLoginException,
@@ -38,9 +39,7 @@ async def get_comment(
     try:
         return await use_cases.get_by_id(comment_id)
     except CommentNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
-        )
+        raise NotFoundException(detail=e.get_detail())
 
 
 @router.get("/post/{post_id}", response_model=list[Comment])
@@ -70,14 +69,8 @@ async def create_comment(
 ):
     try:
         return await use_cases.create(comment_data)
-    except UserNotFoundByLoginException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
-        )
-    except PostNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
-        )
+    except (UserNotFoundByLoginException, PostNotFoundException) as e:
+        raise NotFoundException(detail=e.get_detail())
 
 
 @router.put("/{comment_id}", response_model=Comment)
@@ -89,9 +82,7 @@ async def update_comment(
     try:
         return await use_cases.update(comment_id, comment_data)
     except CommentNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
-        )
+        raise NotFoundException(detail=e.get_detail())
 
 
 @router.delete("/{comment_id}")
@@ -103,6 +94,4 @@ async def delete_comment(
         await use_cases.delete(comment_id)
         return {"status": "success", "message": f"Comment {comment_id} deleted"}
     except CommentNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=e.get_detail()
-        )
+        raise NotFoundException(detail=e.get_detail())

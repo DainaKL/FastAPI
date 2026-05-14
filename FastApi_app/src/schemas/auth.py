@@ -11,3 +11,14 @@ class LoginResponse(BaseSchema):
     token_type: str = "bearer"
     user_id: int
     login: str
+
+class RegisterRequest(BaseSchema):
+    login: str
+    password: str
+    email: str | None = None  
+
+class RegisterResponse(BaseSchema):
+    access_token: str
+    token_type: str = "bearer"
+    user_id: int
+    login: str
