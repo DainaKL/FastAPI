@@ -16,7 +16,7 @@ class DeleteUserUseCase:
             user = self._repo.get_by_id(db, user_id)
             if not user:
                 raise UserNotFoundByIdException(user_id)
-            
+
             self._repo.delete(db, user_id)
             db.commit()
         finally:

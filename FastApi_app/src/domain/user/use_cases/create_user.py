@@ -13,10 +13,10 @@ class CreateUserUseCase:
         try:
             if self._repo.exists_by_login(db, login):
                 raise UserLoginIsNotUniqueException(login=login)
-            
+
             user = self._repo.create(db, login=login, password=password)
             db.commit()
-            
+
             return UserSchema.model_validate(user, from_attributes=True)
         finally:
             db.close()

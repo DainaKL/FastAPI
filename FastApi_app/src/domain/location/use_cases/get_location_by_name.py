@@ -5,6 +5,7 @@ from src.infrastructure.sqlite.repositories.location_repository import (
     LocationRepository,
 )
 from src.schemas.location import Location as LocationSchema
+from src.core.exceptions.database_exceptions import DatabaseOperationException
 from src.core.exceptions.domain_exceptions import LocationNotFoundByNameException
 
 
@@ -18,9 +19,7 @@ class GetLocationByNameUseCase:
             with self._database.session() as session:
                 location = self._repo.get_by_name(session=session, name=name)
                 if not location:
-                    error = LocationNotFoundByNameException(name=name)
-                    logger.error(error.get_detail())
-                    raise error
+                    raise LocationNotFoundByNameException(name=name)
                 return LocationSchema.model_validate(location, from_attributes=True)
         except LocationNotFoundByNameException as e:
             raise e

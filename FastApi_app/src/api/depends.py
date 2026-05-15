@@ -5,6 +5,7 @@ from src.domain.category.use_cases.category_use_cases import CategoryUseCases
 from src.domain.location.use_cases.location_use_cases import LocationUseCases
 from src.domain.post.use_cases.get_posts import GetPostsUseCase
 from src.domain.post.use_cases.get_post import GetPostUseCase
+from src.domain.post.use_cases.get_post_by_id import GetPostByIdUseCase
 from src.domain.post.use_cases.create_post import CreatePostUseCase
 from src.domain.post.use_cases.update_post import UpdatePostUseCase
 from src.domain.post.use_cases.delete_post import DeletePostUseCase
@@ -36,6 +37,10 @@ def get_get_posts_use_case():
 
 def get_get_post_use_case():
     return GetPostUseCase()
+
+
+def get_get_post_by_id_use_case():
+    return GetPostByIdUseCase()
 
 
 def get_create_post_use_case():

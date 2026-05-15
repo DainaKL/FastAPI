@@ -12,6 +12,8 @@ class GetUsersUseCase:
         db = SessionLocal()
         try:
             users = self._repo.get_all(db, skip=skip, limit=limit)
-            return [UserSchema.model_validate(user, from_attributes=True) for user in users]
+            return [
+                UserSchema.model_validate(user, from_attributes=True) for user in users
+            ]
         finally:
             db.close()

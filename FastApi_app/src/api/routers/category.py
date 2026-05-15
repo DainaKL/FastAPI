@@ -1,9 +1,14 @@
 from fastapi import APIRouter, Depends, status
 
 from src.api.depends import get_category_use_cases
+from src.dependencies.auth import get_current_user
 from src.domain.category.use_cases.category_use_cases import CategoryUseCases
 from src.schemas.category import Category, CategoryCreate, CategoryUpdate
-from src.core.exceptions.api_exceptions import NotFoundException, ConflictException
+from src.core.exceptions.api_exceptions import (
+    NotFoundException,
+    ConflictException,
+    ForbiddenException,
+)
 from src.core.exceptions.domain_exceptions import (
     CategoryNotFoundException,
     CategoryNotFoundBySlugException,
@@ -48,6 +53,7 @@ async def get_category_by_slug(
 async def create_category(
     category_data: CategoryCreate,
     use_cases: CategoryUseCases = Depends(get_category_use_cases),
+    current_user: dict = Depends(get_current_user),
 ):
     try:
         return await use_cases.create(category_data)
@@ -60,8 +66,14 @@ async def update_category(
     id: int,
     category_data: CategoryUpdate,
     use_cases: CategoryUseCases = Depends(get_category_use_cases),
+    current_user: dict = Depends(get_current_user),
 ):
     try:
+        if not current_user.get("is_admin"):
+            raise ForbiddenException(
+                detail="Только администратор может редактировать категории"
+            )
+
         return await use_cases.update(id, category_data)
     except CategoryNotFoundException as e:
         raise NotFoundException(detail=e.get_detail())
@@ -71,8 +83,14 @@ async def update_category(
 async def delete_category(
     id: int,
     use_cases: CategoryUseCases = Depends(get_category_use_cases),
+    current_user: dict = Depends(get_current_user),
 ):
     try:
+        if not current_user.get("is_admin"):
+            raise ForbiddenException(
+                detail="Только администратор может удалять категории"
+            )
+
         await use_cases.delete(id)
         return {"status": "success", "message": f"Category {id} deleted"}
     except CategoryNotFoundException as e:

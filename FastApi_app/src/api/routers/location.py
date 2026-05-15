@@ -1,9 +1,14 @@
 from fastapi import APIRouter, Depends, status
 
 from src.api.depends import get_location_use_cases
+from src.dependencies.auth import get_current_user
 from src.domain.location.use_cases.location_use_cases import LocationUseCases
 from src.schemas.location import Location, LocationCreate, LocationUpdate
-from src.core.exceptions.api_exceptions import NotFoundException, ConflictException
+from src.core.exceptions.api_exceptions import (
+    NotFoundException,
+    ConflictException,
+    ForbiddenException,
+)
 from src.core.exceptions.domain_exceptions import (
     LocationNotFoundException,
     LocationNotFoundByNameException,
@@ -57,8 +62,14 @@ async def get_location_by_name(
 async def create_location(
     location_data: LocationCreate,
     use_cases: LocationUseCases = Depends(get_location_use_cases),
+    current_user: dict = Depends(get_current_user),
 ):
     try:
+        if not current_user.get("is_admin"):
+            raise ForbiddenException(
+                detail="Только администратор может создавать локации"
+            )
+
         return await use_cases.create(location_data)
     except LocationAlreadyExistsException as e:
         raise ConflictException(detail=e.get_detail())
@@ -69,8 +80,14 @@ async def update_location(
     location_id: int,
     location_data: LocationUpdate,
     use_cases: LocationUseCases = Depends(get_location_use_cases),
+    current_user: dict = Depends(get_current_user),
 ):
     try:
+        if not current_user.get("is_admin"):
+            raise ForbiddenException(
+                detail="Только администратор может редактировать локации"
+            )
+
         return await use_cases.update(location_id, location_data)
     except LocationNotFoundException as e:
         raise NotFoundException(detail=e.get_detail())
@@ -80,8 +97,14 @@ async def update_location(
 async def delete_location(
     location_id: int,
     use_cases: LocationUseCases = Depends(get_location_use_cases),
+    current_user: dict = Depends(get_current_user),
 ):
     try:
+        if not current_user.get("is_admin"):
+            raise ForbiddenException(
+                detail="Только администратор может удалять локации"
+            )
+
         await use_cases.delete(location_id)
         return {"status": "success", "message": f"Location {location_id} deleted"}
     except LocationNotFoundException as e:

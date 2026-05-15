@@ -5,7 +5,7 @@ from src.infrastructure.sqlite.repositories.category_repository import (
     CategoryRepository,
 )
 from src.schemas.category import Category as CategorySchema
-from src.core.exceptions.database_exceptions import CategoryNotFoundException
+from src.core.exceptions.database_exceptions import DatabaseOperationException
 from src.core.exceptions.domain_exceptions import CategoryNotFoundBySlugException
 
 
@@ -18,8 +18,11 @@ class GetCategoryBySlugUseCase:
         try:
             with self._database.session() as session:
                 category = self._repo.get_by_slug(session=session, slug=slug)
+                if not category:
+                    raise CategoryNotFoundBySlugException(slug=slug)
                 return CategorySchema.model_validate(category, from_attributes=True)
-        except CategoryNotFoundException:
-            error = CategoryNotFoundBySlugException(slug=slug)
-            logger.error(error.get_detail())
-            raise error
+        except CategoryNotFoundBySlugException as e:
+            raise e
+        except DatabaseOperationException as e:
+            logger.error(e.get_detail())
+            raise

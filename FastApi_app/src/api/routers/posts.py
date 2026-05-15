@@ -5,20 +5,22 @@ from pathlib import Path
 from src.api.depends import (
     get_get_posts_use_case,
     get_get_post_use_case,
+    get_get_post_by_id_use_case,
     get_create_post_use_case,
     get_update_post_use_case,
     get_delete_post_use_case,
 )
+from src.dependencies.auth import get_current_user
 from src.domain.post.use_cases.get_posts import GetPostsUseCase
 from src.domain.post.use_cases.get_post import GetPostUseCase
+from src.domain.post.use_cases.get_post_by_id import GetPostByIdUseCase
 from src.domain.post.use_cases.create_post import CreatePostUseCase
 from src.domain.post.use_cases.update_post import UpdatePostUseCase
 from src.domain.post.use_cases.delete_post import DeletePostUseCase
 from src.schemas.posts import Post, PostCreate, PostUpdate
-from src.core.exceptions.api_exceptions import NotFoundException
+from src.core.exceptions.api_exceptions import NotFoundException, ForbiddenException
 from src.core.exceptions.domain_exceptions import (
     PostNotFoundException,
-    UserNotFoundByLoginException,
     CategoryNotFoundException,
     LocationNotFoundException,
 )
@@ -50,14 +52,12 @@ async def get_post(
 async def create_post(
     post_data: PostCreate,
     use_case: CreatePostUseCase = Depends(get_create_post_use_case),
+    current_user: dict = Depends(get_current_user),
 ):
     try:
-        return await use_case.execute(post_data)
-    except (
-        UserNotFoundByLoginException,
-        CategoryNotFoundException,
-        LocationNotFoundException,
-    ) as e:
+        post_data.author_id = current_user["id"]
+        return await use_case.execute(post_data=post_data)
+    except (CategoryNotFoundException, LocationNotFoundException) as e:
         raise NotFoundException(detail=e.get_detail())
 
 
@@ -65,10 +65,16 @@ async def create_post(
 async def update_post(
     id: int,
     post_data: PostUpdate,
-    use_case: UpdatePostUseCase = Depends(get_update_post_use_case),
+    get_post_use_case: GetPostByIdUseCase = Depends(get_get_post_by_id_use_case),
+    update_use_case: UpdatePostUseCase = Depends(get_update_post_use_case),
+    current_user: dict = Depends(get_current_user),
 ):
     try:
-        return await use_case.execute(post_id=id, data=post_data)
+        post = await get_post_use_case.execute(post_id=id)
+        if not current_user.get("is_admin") and post.author_id != current_user["id"]:
+            raise ForbiddenException(detail="Вы можете редактировать только свои посты")
+
+        return await update_use_case.execute(post_id=id, data=post_data)
     except PostNotFoundException as e:
         raise NotFoundException(detail=e.get_detail())
     except (CategoryNotFoundException, LocationNotFoundException) as e:
@@ -78,10 +84,16 @@ async def update_post(
 @router.delete("/posts/{id}")
 async def delete_post(
     id: int,
-    use_case: DeletePostUseCase = Depends(get_delete_post_use_case),
+    get_post_use_case: GetPostByIdUseCase = Depends(get_get_post_by_id_use_case),
+    delete_use_case: DeletePostUseCase = Depends(get_delete_post_use_case),
+    current_user: dict = Depends(get_current_user),
 ):
     try:
-        await use_case.execute(post_id=id)
+        post = await get_post_use_case.execute(post_id=id)
+        if not current_user.get("is_admin") and post.author_id != current_user["id"]:
+            raise ForbiddenException(detail="Вы можете удалять только свои посты")
+
+        await delete_use_case.execute(post_id=id)
         return {"status": "success", "message": f"Post {id} deleted"}
     except PostNotFoundException as e:
         raise NotFoundException(detail=e.get_detail())
@@ -91,19 +103,30 @@ async def delete_post(
 async def upload_post_image(
     id: int,
     image: UploadFile = File(...),
-    use_case: UpdatePostUseCase = Depends(get_update_post_use_case),
+    get_post_use_case: GetPostByIdUseCase = Depends(get_get_post_by_id_use_case),
+    update_use_case: UpdatePostUseCase = Depends(get_update_post_use_case),
+    current_user: dict = Depends(get_current_user),
 ):
-    media_dir = Path("media/post_images")
-    media_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        post = await get_post_use_case.execute(post_id=id)
+        if not current_user.get("is_admin") and post.author_id != current_user["id"]:
+            raise ForbiddenException(detail="Вы можете редактировать только свои посты")
 
-    file_extension = Path(image.filename).suffix
-    file_name = f"{id}_{datetime.now().timestamp()}{file_extension}"
-    file_path = media_dir / file_name
+        media_dir = Path("media/post_images")
+        media_dir.mkdir(parents=True, exist_ok=True)
 
-    with open(file_path, "wb") as buffer:
-        content = await image.read()
-        buffer.write(content)
+        file_extension = Path(image.filename).suffix
+        file_name = f"{id}_{datetime.now().timestamp()}{file_extension}"
+        file_path = media_dir / file_name
 
-    image_url = f"/media/post_images/{file_name}"
-    updated_post = await use_case.execute(post_id=id, data=PostUpdate(image=image_url))
-    return updated_post
+        with open(file_path, "wb") as buffer:
+            content = await image.read()
+            buffer.write(content)
+
+        image_url = f"/media/post_images/{file_name}"
+        updated_post = await update_use_case.execute(
+            post_id=id, data=PostUpdate(image=image_url)
+        )
+        return updated_post
+    except PostNotFoundException as e:
+        raise NotFoundException(detail=e.get_detail())

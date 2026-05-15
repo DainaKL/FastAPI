@@ -57,11 +57,7 @@ class UserDeletedSuccessfullyException(HTTPException):
             message = f"Пользователь '{login}' успешно удален"
         super().__init__(
             status_code=status.HTTP_200_OK,
-            detail={
-                "status": "success",
-                "message": message,
-                "user_id": user_id
-            }
+            detail={"status": "success", "message": message, "user_id": user_id},
         )
 
 
@@ -73,8 +69,8 @@ class ProfileUpdatedSuccessfullyException(HTTPException):
                 "status": "success",
                 "message": f"Профиль пользователя '{login}' успешно обновлен",
                 "user_id": user_id,
-                "login": login
-            }
+                "login": login,
+            },
         )
 
 
@@ -91,3 +87,196 @@ class InvalidTokenException(CredentialsException):
 class AdminRequiredException(ForbiddenException):
     def __init__(self):
         super().__init__(detail="Требуются права администратора")
+
+
+class PostNotFoundException(NotFoundException):
+    def __init__(self, post_id: int):
+        super().__init__(detail=f"Пост с id '{post_id}' не найден")
+
+
+class PostDeletedSuccessfullyException(HTTPException):
+    def __init__(self, post_id: int):
+        super().__init__(
+            status_code=status.HTTP_200_OK,
+            detail={
+                "status": "success",
+                "message": f"Пост с id '{post_id}' успешно удален",
+                "post_id": post_id,
+            },
+        )
+
+
+class PostUpdatedSuccessfullyException(HTTPException):
+    def __init__(self, post_id: int):
+        super().__init__(
+            status_code=status.HTTP_200_OK,
+            detail={
+                "status": "success",
+                "message": f"Пост с id '{post_id}' успешно обновлен",
+                "post_id": post_id,
+            },
+        )
+
+
+class PostCreatedSuccessfullyException(HTTPException):
+    def __init__(self, post_id: int):
+        super().__init__(
+            status_code=status.HTTP_201_CREATED,
+            detail={
+                "status": "success",
+                "message": f"Пост с id '{post_id}' успешно создан",
+                "post_id": post_id,
+            },
+        )
+
+
+class CommentNotFoundException(NotFoundException):
+    def __init__(self, comment_id: int):
+        super().__init__(detail=f"Комментарий с id '{comment_id}' не найден")
+
+
+class CommentDeletedSuccessfullyException(HTTPException):
+    def __init__(self, comment_id: int):
+        super().__init__(
+            status_code=status.HTTP_200_OK,
+            detail={
+                "status": "success",
+                "message": f"Комментарий с id '{comment_id}' успешно удален",
+                "comment_id": comment_id,
+            },
+        )
+
+
+class CommentUpdatedSuccessfullyException(HTTPException):
+    def __init__(self, comment_id: int):
+        super().__init__(
+            status_code=status.HTTP_200_OK,
+            detail={
+                "status": "success",
+                "message": f"Комментарий с id '{comment_id}' успешно обновлен",
+                "comment_id": comment_id,
+            },
+        )
+
+
+class CommentCreatedSuccessfullyException(HTTPException):
+    def __init__(self, comment_id: int):
+        super().__init__(
+            status_code=status.HTTP_201_CREATED,
+            detail={
+                "status": "success",
+                "message": f"Комментарий с id '{comment_id}' успешно создан",
+                "comment_id": comment_id,
+            },
+        )
+
+
+class CategoryNotFoundException(NotFoundException):
+    def __init__(self, category_id: int = None, slug: str = None):
+        if category_id:
+            detail = f"Категория с id '{category_id}' не найдена"
+        elif slug:
+            detail = f"Категория со slug '{slug}' не найдена"
+        else:
+            detail = "Категория не найдена"
+        super().__init__(detail=detail)
+
+
+class CategorySlugAlreadyExistsException(ConflictException):
+    def __init__(self, slug: str):
+        super().__init__(detail=f"Категория со slug '{slug}' уже существует")
+
+
+class CategoryDeletedSuccessfullyException(HTTPException):
+    def __init__(self, category_id: int):
+        super().__init__(
+            status_code=status.HTTP_200_OK,
+            detail={
+                "status": "success",
+                "message": f"Категория с id '{category_id}' успешно удалена",
+                "category_id": category_id,
+            },
+        )
+
+
+class CategoryUpdatedSuccessfullyException(HTTPException):
+    def __init__(self, category_id: int):
+        super().__init__(
+            status_code=status.HTTP_200_OK,
+            detail={
+                "status": "success",
+                "message": f"Категория с id '{category_id}' успешно обновлена",
+                "category_id": category_id,
+            },
+        )
+
+
+class CategoryCreatedSuccessfullyException(HTTPException):
+    def __init__(self, category_id: int):
+        super().__init__(
+            status_code=status.HTTP_201_CREATED,
+            detail={
+                "status": "success",
+                "message": f"Категория с id '{category_id}' успешно создана",
+                "category_id": category_id,
+            },
+        )
+
+
+class LocationNotFoundException(NotFoundException):
+    def __init__(self, location_id: int = None, name: str = None):
+        if location_id:
+            detail = f"Локация с id '{location_id}' не найдена"
+        elif name:
+            detail = f"Локация с именем '{name}' не найдена"
+        else:
+            detail = "Локация не найдена"
+        super().__init__(detail=detail)
+
+
+class LocationAlreadyExistsException(ConflictException):
+    def __init__(self, name: str):
+        super().__init__(detail=f"Локация с именем '{name}' уже существует")
+
+
+class LocationDeletedSuccessfullyException(HTTPException):
+    def __init__(self, location_id: int):
+        super().__init__(
+            status_code=status.HTTP_200_OK,
+            detail={
+                "status": "success",
+                "message": f"Локация с id '{location_id}' успешно удалена",
+                "location_id": location_id,
+            },
+        )
+
+
+class LocationUpdatedSuccessfullyException(HTTPException):
+    def __init__(self, location_id: int):
+        super().__init__(
+            status_code=status.HTTP_200_OK,
+            detail={
+                "status": "success",
+                "message": f"Локация с id '{location_id}' успешно обновлена",
+                "location_id": location_id,
+            },
+        )
+
+
+class LocationCreatedSuccessfullyException(HTTPException):
+    def __init__(self, location_id: int):
+        super().__init__(
+            status_code=status.HTTP_201_CREATED,
+            detail={
+                "status": "success",
+                "message": f"Локация с id '{location_id}' успешно создана",
+                "location_id": location_id,
+            },
+        )
+
+
+class NotYourResourceException(ForbiddenException):
+    def __init__(self, resource_name: str = "ресурс"):
+        super().__init__(
+            detail=f"Вы можете редактировать/удалять только свой {resource_name}"
+        )

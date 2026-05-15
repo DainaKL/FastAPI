@@ -18,9 +18,7 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @router.get("/me", response_model=User)
-def get_current_user_info(
-    current_user: dict = Depends(get_current_user)
-):
+def get_current_user_info(current_user: dict = Depends(get_current_user)):
     return User(id=current_user["id"], login=current_user["login"])
 
 
@@ -33,8 +31,7 @@ def update_current_user(
     try:
         updated_user = use_cases.update(current_user["id"], user_data)
         raise ProfileUpdatedSuccessfullyException(
-            user_id=updated_user.id,
-            login=updated_user.login
+            user_id=updated_user.id, login=updated_user.login
         )
     except UserNotFoundByIdException:
         raise UserNotFoundException(user_id=current_user["id"])
@@ -51,8 +48,7 @@ def delete_current_user(
     try:
         use_cases.delete(current_user["id"])
         raise UserDeletedSuccessfullyException(
-            user_id=current_user["id"],
-            login=current_user["login"]
+            user_id=current_user["id"], login=current_user["login"]
         )
     except UserNotFoundByIdException:
         raise UserNotFoundException(user_id=current_user["id"])
@@ -90,8 +86,7 @@ def update_user_by_admin(
     try:
         updated_user = use_cases.update(user_id, user_data)
         raise ProfileUpdatedSuccessfullyException(
-            user_id=updated_user.id,
-            login=updated_user.login
+            user_id=updated_user.id, login=updated_user.login
         )
     except UserNotFoundByIdException:
         raise UserNotFoundException(user_id=user_id)
@@ -109,9 +104,6 @@ def delete_user_by_admin(
     try:
         user = use_cases.get_by_id(user_id)
         use_cases.delete(user_id)
-        raise UserDeletedSuccessfullyException(
-            user_id=user_id,
-            login=user.login
-        )
+        raise UserDeletedSuccessfullyException(user_id=user_id, login=user.login)
     except UserNotFoundByIdException:
         raise UserNotFoundException(user_id=user_id)

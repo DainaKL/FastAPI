@@ -1,5 +1,5 @@
 from typing import Type
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import select, insert, update
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -55,7 +55,9 @@ class CommentRepository:
 
     def create(self, session: Session, comment: CommentSchema) -> CommentModel:
         try:
-            query = insert(self._model).values(comment.model_dump()).returning(self._model)
+            query = (
+                insert(self._model).values(comment.model_dump()).returning(self._model)
+            )
             result = session.execute(query)
             session.flush()
             return result.scalar_one()
@@ -63,7 +65,12 @@ class CommentRepository:
             raise DatabaseOperationException("create", str(e))
 
     def update(self, session: Session, comment_id: int, **kwargs):
-        query = update(self._model).where(self._model.id == comment_id).values(**kwargs).returning(self._model)
+        query = (
+            update(self._model)
+            .where(self._model.id == comment_id)
+            .values(**kwargs)
+            .returning(self._model)
+        )
         result = session.execute(query)
         session.flush()
         return result.scalar_one_or_none()

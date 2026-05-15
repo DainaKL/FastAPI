@@ -30,7 +30,12 @@ class PostBase(BaseSchema):
         return v
 
 
-class PostCreate(PostBase):
+class PostCreate(BaseSchema):
+    title: str
+    text: str
+    pub_date: datetime
+    is_published: bool = True
+    image: str | None = None
     author_id: int
     location_id: int | None = None
     category_id: int | None = None

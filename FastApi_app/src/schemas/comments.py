@@ -20,7 +20,9 @@ class CommentBase(BaseSchema):
         return v
 
 
-class CommentCreate(CommentBase):
+class CommentCreate(BaseSchema):
+    text: str
+    is_published: bool = True
     author_id: int
     post_id: int
 

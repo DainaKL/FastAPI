@@ -1,7 +1,6 @@
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import select, insert, update
 from sqlalchemy.orm import Session
 from src.infrastructure.sqlite.models.users import User as UserModel
-from src.core.exceptions.database_exceptions import UserAlreadyExistsException
 from src.core.security import get_password_hash
 
 
@@ -46,7 +45,12 @@ class UserRepository:
     def update(self, session: Session, user_id: int, **kwargs):
         if "password" in kwargs:
             kwargs["password"] = get_password_hash(kwargs["password"])
-        query = update(UserModel).where(UserModel.id == user_id).values(**kwargs).returning(UserModel)
+        query = (
+            update(UserModel)
+            .where(UserModel.id == user_id)
+            .values(**kwargs)
+            .returning(UserModel)
+        )
         result = session.execute(query)
         session.flush()
         return result.scalar_one_or_none()

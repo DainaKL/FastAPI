@@ -6,7 +6,7 @@ from src.infrastructure.sqlite.repositories.user_repository import UserRepositor
 from src.core.exceptions.api_exceptions import (
     InvalidTokenException,
     UserNotFoundException,
-    AdminRequiredException
+    AdminRequiredException,
 )
 
 security = HTTPBearer()
@@ -29,15 +29,11 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     try:
         user_repo = UserRepository()
         user = user_repo.get_by_id(db, int(user_id))
-        
+
         if not user:
             raise UserNotFoundException(user_id=user_id)
-        
-        return {
-            "id": user.id, 
-            "login": user.login,
-            "is_admin": user.is_admin
-        }
+
+        return {"id": user.id, "login": user.login, "is_admin": user.is_admin}
     finally:
         db.close()
 

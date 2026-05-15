@@ -5,7 +5,6 @@ from src.infrastructure.sqlite.repositories.location_repository import (
 )
 from src.schemas.location import Location as LocationSchema, LocationCreate
 from src.core.exceptions.database_exceptions import (
-    LocationAlreadyExistsException,
     DatabaseOperationException,
 )
 from src.core.exceptions.domain_exceptions import (

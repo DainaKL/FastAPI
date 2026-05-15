@@ -1,5 +1,5 @@
 from typing import Type
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import select, insert, update
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -30,7 +30,9 @@ class CategoryRepository:
 
     def create(self, session: Session, category: CategorySchema) -> CategoryModel:
         try:
-            query = insert(self._model).values(category.model_dump()).returning(self._model)
+            query = (
+                insert(self._model).values(category.model_dump()).returning(self._model)
+            )
             result = session.execute(query)
             session.flush()
             return result.scalar_one()
@@ -38,7 +40,12 @@ class CategoryRepository:
             raise DatabaseOperationException("create", str(e))
 
     def update(self, session: Session, category_id: int, **kwargs):
-        query = update(self._model).where(self._model.id == category_id).values(**kwargs).returning(self._model)
+        query = (
+            update(self._model)
+            .where(self._model.id == category_id)
+            .values(**kwargs)
+            .returning(self._model)
+        )
         result = session.execute(query)
         session.flush()
         return result.scalar_one_or_none()
