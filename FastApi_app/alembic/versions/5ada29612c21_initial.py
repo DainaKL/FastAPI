@@ -1,8 +1,8 @@
-"""foreign keys and models are fixed
+"""initial
 
-Revision ID: 167e21f6e3c2
+Revision ID: 5ada29612c21
 Revises:
-Create Date: 2026-04-17 18:01:49.226314
+Create Date: 2026-05-15 13:26:31.598178
 
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision: str = "167e21f6e3c2"
+revision: str = "5ada29612c21"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

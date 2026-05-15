@@ -1,88 +1,42 @@
-from typing import Annotated
-from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
-from jose import jwt
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, Column, Integer, String
-
-from src.core.config import settings
-from src.core.database import get_async_session, Base
-from src.core.security import verify_password, get_password_hash
-from src.schemas.auth import LoginResponse
-from src.core.exceptions.api_exceptions import CredentialsException
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from src.core.database import get_db
+from src.infrastructure.sqlite.models.users import User as UserModel
+from src.core.security import get_password_hash, create_access_token
+from src.schemas.auth import LoginRequest, LoginResponse
+from src.domain.auth.use_cases.authenticate_user import AuthenticateUserUseCase
 from src.core.exceptions.domain_exceptions import UserNotFoundByLoginException
 from src.core.exceptions.auth_exceptions import InvalidPasswordException
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-class User(Base):
-    __tablename__ = "users"
-    __table_args__ = {"extend_existing": True}
-    
-    id = Column(Integer, primary_key=True, index=True)
-    login = Column(String(50), unique=True, nullable=False, index=True)
-    password = Column(String(255), nullable=False)
-
-
-@router.post("/token", response_model=LoginResponse)
-async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: AsyncSession = Depends(get_async_session),
-) -> LoginResponse:
+@router.post("/login", response_model=LoginResponse)
+def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     try:
-        result = await db.execute(
-            select(User).where(User.login == form_data.username)
+        user = AuthenticateUserUseCase().execute(db, login_data.login, login_data.password)
+        access_token = create_access_token(data={"sub": str(user.id), "login": user.login})
+        
+        return LoginResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user_id=user.id,
+            login=user.login
         )
-        user = result.scalar_one_or_none()
-        
-        if not user:
-            raise UserNotFoundByLoginException(form_data.username)
-        
-        if not verify_password(form_data.password, user.password):
-            raise InvalidPasswordException()
-            
-    except UserNotFoundByLoginException as e:
-        raise CredentialsException(detail=e.get_detail())
-    except InvalidPasswordException as e:
-        raise CredentialsException(detail=e.get_detail())
-    
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    token_data = {"sub": str(user.id), "login": user.login}
-    
-    to_encode = token_data.copy()
-    if access_token_expires:
-        expire = datetime.now(timezone.utc) + access_token_expires
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    to_encode.update({"exp": expire})
-    access_token = jwt.encode(
-        claims=to_encode,
-        key=settings.SECRET_AUTH_KEY.get_secret_value(),
-        algorithm=settings.AUTH_ALGORITHM,
-    )
-    
-    return LoginResponse(
-        access_token=access_token,
-        user_id=user.id,
-        login=user.login,
-    )
+    except (UserNotFoundByLoginException, InvalidPasswordException) as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=e.get_detail())
 
 
 @router.post("/register")
-async def register(
-    login: str,
-    password: str,
-    db: AsyncSession = Depends(get_async_session),
-):
-    result = await db.execute(select(User).where(User.login == login))
-    if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Пользователь уже существует")
+async def register(login: str, password: str, db: Session = Depends(get_db)):
+    existing_user = db.query(UserModel).filter(UserModel.login == login).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User already exists")
     
-    user = User(login=login, password=get_password_hash(password))
-    db.add(user)
-    await db.commit()
+    hashed_password = get_password_hash(password)
+    new_user = UserModel(login=login, password=hashed_password)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     
-    return {"message": "Пользователь создан"}
+    return {"message": "User created", "user_id": new_user.id, "login": new_user.login}
