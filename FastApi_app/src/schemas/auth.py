@@ -12,10 +12,12 @@ class LoginResponse(BaseSchema):
     user_id: int
     login: str
 
+
 class RegisterRequest(BaseSchema):
     login: str
     password: str
-    email: str | None = None  
+    email: str | None = None
+
 
 class RegisterResponse(BaseSchema):
     access_token: str

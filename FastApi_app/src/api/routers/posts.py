@@ -1,7 +1,19 @@
-from fastapi import APIRouter, Depends, status
+from datetime import datetime
+from fastapi import APIRouter, Depends, status, UploadFile, File
+from pathlib import Path
 
-from src.api.depends import get_post_use_cases
-from src.domain.post.use_cases.post_use_cases import PostUseCases
+from src.api.depends import (
+    get_get_posts_use_case,
+    get_get_post_use_case,
+    get_create_post_use_case,
+    get_update_post_use_case,
+    get_delete_post_use_case,
+)
+from src.domain.post.use_cases.get_posts import GetPostsUseCase
+from src.domain.post.use_cases.get_post import GetPostUseCase
+from src.domain.post.use_cases.create_post import CreatePostUseCase
+from src.domain.post.use_cases.update_post import UpdatePostUseCase
+from src.domain.post.use_cases.delete_post import DeletePostUseCase
 from src.schemas.posts import Post, PostCreate, PostUpdate
 from src.core.exceptions.api_exceptions import NotFoundException
 from src.core.exceptions.domain_exceptions import (
@@ -18,18 +30,18 @@ router = APIRouter(prefix="/base", tags=["Base APIs"])
 async def get_posts(
     skip: int = 0,
     limit: int = 100,
-    use_cases: PostUseCases = Depends(get_post_use_cases),
+    use_case: GetPostsUseCase = Depends(get_get_posts_use_case),
 ):
-    return await use_cases.get_all(skip=skip, limit=limit)
+    return await use_case.execute(skip=skip, limit=limit)
 
 
 @router.get("/posts/{id}", response_model=Post)
 async def get_post(
     id: int,
-    use_cases: PostUseCases = Depends(get_post_use_cases),
+    use_case: GetPostUseCase = Depends(get_get_post_use_case),
 ):
     try:
-        return await use_cases.get_by_id(id)
+        return await use_case.execute(post_id=id)
     except PostNotFoundException as e:
         raise NotFoundException(detail=e.get_detail())
 
@@ -37,11 +49,15 @@ async def get_post(
 @router.post("/posts", status_code=status.HTTP_201_CREATED, response_model=Post)
 async def create_post(
     post_data: PostCreate,
-    use_cases: PostUseCases = Depends(get_post_use_cases),
+    use_case: CreatePostUseCase = Depends(get_create_post_use_case),
 ):
     try:
-        return await use_cases.create(post_data)
-    except (UserNotFoundByLoginException, CategoryNotFoundException, LocationNotFoundException) as e:
+        return await use_case.execute(post_data)
+    except (
+        UserNotFoundByLoginException,
+        CategoryNotFoundException,
+        LocationNotFoundException,
+    ) as e:
         raise NotFoundException(detail=e.get_detail())
 
 
@@ -49,10 +65,10 @@ async def create_post(
 async def update_post(
     id: int,
     post_data: PostUpdate,
-    use_cases: PostUseCases = Depends(get_post_use_cases),
+    use_case: UpdatePostUseCase = Depends(get_update_post_use_case),
 ):
     try:
-        return await use_cases.update(id, post_data)
+        return await use_case.execute(post_id=id, data=post_data)
     except PostNotFoundException as e:
         raise NotFoundException(detail=e.get_detail())
     except (CategoryNotFoundException, LocationNotFoundException) as e:
@@ -62,10 +78,32 @@ async def update_post(
 @router.delete("/posts/{id}")
 async def delete_post(
     id: int,
-    use_cases: PostUseCases = Depends(get_post_use_cases),
+    use_case: DeletePostUseCase = Depends(get_delete_post_use_case),
 ):
     try:
-        await use_cases.delete(id)
+        await use_case.execute(post_id=id)
         return {"status": "success", "message": f"Post {id} deleted"}
     except PostNotFoundException as e:
         raise NotFoundException(detail=e.get_detail())
+
+
+@router.post("/posts/{id}/image", response_model=Post)
+async def upload_post_image(
+    id: int,
+    image: UploadFile = File(...),
+    use_case: UpdatePostUseCase = Depends(get_update_post_use_case),
+):
+    media_dir = Path("media/post_images")
+    media_dir.mkdir(parents=True, exist_ok=True)
+
+    file_extension = Path(image.filename).suffix
+    file_name = f"{id}_{datetime.now().timestamp()}{file_extension}"
+    file_path = media_dir / file_name
+
+    with open(file_path, "wb") as buffer:
+        content = await image.read()
+        buffer.write(content)
+
+    image_url = f"/media/post_images/{file_name}"
+    updated_post = await use_case.execute(post_id=id, data=PostUpdate(image=image_url))
+    return updated_post

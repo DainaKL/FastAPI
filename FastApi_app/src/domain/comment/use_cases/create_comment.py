@@ -1,4 +1,4 @@
-import logging
+from src.core.logger import logger
 from src.infrastructure.sqlite.database import database
 from src.infrastructure.sqlite.repositories.comment_repository import CommentRepository
 from src.infrastructure.sqlite.repositories.user_repository import UserRepository
@@ -8,8 +8,6 @@ from src.core.exceptions.domain_exceptions import (
     UserNotFoundByLoginException,
     PostNotFoundException,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class CreateCommentUseCase:

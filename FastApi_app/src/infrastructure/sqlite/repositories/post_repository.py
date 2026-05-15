@@ -25,20 +25,22 @@ class PostRepository:
     def create(self, session: Session, post: PostSchema) -> PostModel:
         try:
             query = insert(self._model).values(post.model_dump()).returning(self._model)
-            return session.scalar(query)
+            result = session.execute(query)
+            session.flush()
+            return result.scalar_one()
         except IntegrityError as e:
             raise DatabaseOperationException("create", str(e))
 
     def update(self, session: Session, post_id: int, **kwargs):
-        query = (
-            update(self._model)
-            .where(self._model.id == post_id)
-            .values(**kwargs)
-            .returning(self._model)
-        )
-        return session.scalar(query)
+        query = update(self._model).where(self._model.id == post_id).values(**kwargs).returning(self._model)
+        result = session.execute(query)
+        session.flush()
+        return result.scalar_one_or_none()
 
     def delete(self, session: Session, post_id: int):
-        query = delete(self._model).where(self._model.id == post_id)
-        result = session.execute(query)
-        return result.rowcount > 0
+        post = session.get(self._model, post_id)
+        if post:
+            session.delete(post)
+            session.flush()
+            return True
+        return False

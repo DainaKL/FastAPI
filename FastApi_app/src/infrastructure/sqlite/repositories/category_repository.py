@@ -30,23 +30,23 @@ class CategoryRepository:
 
     def create(self, session: Session, category: CategorySchema) -> CategoryModel:
         try:
-            query = (
-                insert(self._model).values(category.model_dump()).returning(self._model)
-            )
-            return session.scalar(query)
+            query = insert(self._model).values(category.model_dump()).returning(self._model)
+            result = session.execute(query)
+            session.flush()
+            return result.scalar_one()
         except IntegrityError as e:
             raise DatabaseOperationException("create", str(e))
 
     def update(self, session: Session, category_id: int, **kwargs):
-        query = (
-            update(self._model)
-            .where(self._model.id == category_id)
-            .values(**kwargs)
-            .returning(self._model)
-        )
-        return session.scalar(query)
+        query = update(self._model).where(self._model.id == category_id).values(**kwargs).returning(self._model)
+        result = session.execute(query)
+        session.flush()
+        return result.scalar_one_or_none()
 
     def delete(self, session: Session, category_id: int):
-        query = delete(self._model).where(self._model.id == category_id)
-        result = session.execute(query)
-        return result.rowcount > 0
+        category = session.get(self._model, category_id)
+        if category:
+            session.delete(category)
+            session.flush()
+            return True
+        return False

@@ -1,12 +1,10 @@
-import logging
+from src.core.logger import logger
 
 from src.infrastructure.sqlite.database import database
 from src.infrastructure.sqlite.repositories.comment_repository import CommentRepository
 from src.core.exceptions.domain_exceptions import (
     CommentNotFoundException as DomainCommentNotFoundException,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class DeleteCommentUseCase:

@@ -17,7 +17,10 @@ class Database:
             db_url = os.getenv("DATABASE_URL", "sqlite:///./db.sqlite3")
         self._db_url = db_url
         self._engine = create_engine(
-            self._db_url, connect_args={"check_same_thread": False} if "sqlite" in self._db_url else {}
+            self._db_url,
+            connect_args={"check_same_thread": False}
+            if "sqlite" in self._db_url
+            else {},
         )
 
     @contextmanager

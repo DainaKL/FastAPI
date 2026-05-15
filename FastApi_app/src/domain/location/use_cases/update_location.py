@@ -1,4 +1,4 @@
-import logging
+from src.core.logger import logger
 
 from src.infrastructure.sqlite.database import database
 from src.infrastructure.sqlite.repositories.location_repository import (
@@ -9,8 +9,6 @@ from src.core.exceptions.database_exceptions import DatabaseOperationException
 from src.core.exceptions.domain_exceptions import (
     LocationNotFoundException as DomainLocationNotFoundException,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class UpdateLocationUseCase:

@@ -21,23 +21,6 @@ class UserBase(BaseSchema):
         return v
 
 
-class UserCreate(UserBase):
-    password: str
-
-    @field_validator("password")
-    @classmethod
-    def validate_password(cls, v: str) -> str:
-        if len(v) < 6:
-            raise ValueError("Пароль должен содержать минимум 6 символов")
-        if len(v) > 100:
-            raise ValueError("Пароль должен содержать максимум 100 символов")
-        if not re.search(r"[A-Za-z]", v):
-            raise ValueError("Пароль должен содержать хотя бы одну букву")
-        if not re.search(r"[0-9]", v):
-            raise ValueError("Пароль должен содержать хотя бы одну цифру")
-        return v
-
-
 class UserUpdate(BaseSchema):
     login: str | None = None
     password: str | None = None

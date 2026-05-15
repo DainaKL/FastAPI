@@ -55,23 +55,23 @@ class CommentRepository:
 
     def create(self, session: Session, comment: CommentSchema) -> CommentModel:
         try:
-            query = (
-                insert(self._model).values(comment.model_dump()).returning(self._model)
-            )
-            return session.scalar(query)
+            query = insert(self._model).values(comment.model_dump()).returning(self._model)
+            result = session.execute(query)
+            session.flush()
+            return result.scalar_one()
         except IntegrityError as e:
             raise DatabaseOperationException("create", str(e))
 
     def update(self, session: Session, comment_id: int, **kwargs):
-        query = (
-            update(self._model)
-            .where(self._model.id == comment_id)
-            .values(**kwargs)
-            .returning(self._model)
-        )
-        return session.scalar(query)
+        query = update(self._model).where(self._model.id == comment_id).values(**kwargs).returning(self._model)
+        result = session.execute(query)
+        session.flush()
+        return result.scalar_one_or_none()
 
     def delete(self, session: Session, comment_id: int):
-        query = delete(self._model).where(self._model.id == comment_id)
-        result = session.execute(query)
-        return result.rowcount > 0
+        comment = session.get(self._model, comment_id)
+        if comment:
+            session.delete(comment)
+            session.flush()
+            return True
+        return False

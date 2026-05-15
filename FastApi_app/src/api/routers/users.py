@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, status
 
-from src.api.depends import get_user_use_cases, get_current_user
+from src.api.depends import get_user_use_cases
+from src.api.routers.auth import get_current_user
 from src.domain.user.use_cases.user_use_cases import UserUseCases
-from src.schemas.users import User, UserCreate, UserUpdate
-from src.core.exceptions.api_exceptions import NotFoundException, ConflictException
+from src.schemas.users import User, UserUpdate
+from src.core.exceptions.api_exceptions import NotFoundException, ConflictException, ForbiddenException
 from src.core.exceptions.domain_exceptions import (
     UserNotFoundByLoginException,
     UserLoginIsNotUniqueException,
@@ -48,34 +49,35 @@ async def get_user(
         raise NotFoundException(detail=e.get_detail())
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=User)
-async def create_user(
-    user_data: UserCreate,
-    use_cases: UserUseCases = Depends(get_user_use_cases),
-):
-    try:
-        return await use_cases.create(user_data)
-    except UserLoginIsNotUniqueException as e:
-        raise ConflictException(detail=e.get_detail())
-
-
 @router.put("/{user_id}", response_model=User)
 async def update_user(
     user_id: int,
     user_data: UserUpdate,
     use_cases: UserUseCases = Depends(get_user_use_cases),
+    current_user: dict = Depends(get_current_user),
 ):
+    # Проверка прав: только свой аккаунт
+    if current_user["id"] != user_id:
+        raise ForbiddenException(detail="Вы можете редактировать только свой профиль")
+    
     try:
         return await use_cases.update(user_id, user_data)
     except UserNotFoundByLoginException as e:
         raise NotFoundException(detail=e.get_detail())
+    except UserLoginIsNotUniqueException as e:
+        raise ConflictException(detail=e.get_detail())
 
 
 @router.delete("/{user_id}")
 async def delete_user(
     user_id: int,
     use_cases: UserUseCases = Depends(get_user_use_cases),
+    current_user: dict = Depends(get_current_user),
 ):
+    # Проверка прав: только свой аккаунт
+    if current_user["id"] != user_id:
+        raise ForbiddenException(detail="Вы можете удалить только свой профиль")
+    
     try:
         await use_cases.delete(user_id)
         return {"status": "success", "message": f"User {user_id} deleted"}

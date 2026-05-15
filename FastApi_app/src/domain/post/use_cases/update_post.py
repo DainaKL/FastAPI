@@ -1,4 +1,4 @@
-import logging
+from src.core.logger import logger
 
 from src.infrastructure.sqlite.database import database
 from src.infrastructure.sqlite.repositories.post_repository import PostRepository
@@ -17,8 +17,6 @@ from src.core.exceptions.domain_exceptions import (
     CategoryNotFoundException as DomainCategoryNotFoundException,
     LocationNotFoundException as DomainLocationNotFoundException,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class UpdatePostUseCase:

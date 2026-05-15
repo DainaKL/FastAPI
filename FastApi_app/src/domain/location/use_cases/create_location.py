@@ -1,16 +1,16 @@
-import logging
-
+from src.core.logger import logger
 from src.infrastructure.sqlite.database import database
 from src.infrastructure.sqlite.repositories.location_repository import (
     LocationRepository,
 )
 from src.schemas.location import Location as LocationSchema, LocationCreate
-from src.core.exceptions.database_exceptions import DatabaseOperationException
+from src.core.exceptions.database_exceptions import (
+    LocationAlreadyExistsException,
+    DatabaseOperationException,
+)
 from src.core.exceptions.domain_exceptions import (
     LocationAlreadyExistsException as DomainLocationAlreadyExistsException,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class CreateLocationUseCase:
@@ -27,8 +27,7 @@ class CreateLocationUseCase:
                     logger.error(error.get_detail())
                     raise error
 
-                location_dict = data.model_dump()
-                location = self._repo.create(session=session, **location_dict)
+                location = self._repo.create(session=session, location=data)
                 return LocationSchema.model_validate(location, from_attributes=True)
         except DomainLocationAlreadyExistsException as e:
             raise e

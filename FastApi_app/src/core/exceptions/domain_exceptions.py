@@ -49,6 +49,14 @@ class CategoryNotFoundBySlugException(BaseDomainException):
         super().__init__(detail=detail)
 
 
+class CategorySlugAlreadyExistsException(BaseDomainException):
+    _exception_text_template = "Категория с slug {slug} уже существует"
+
+    def __init__(self, slug: str) -> None:
+        detail = self._exception_text_template.format(slug=slug)
+        super().__init__(detail=detail)
+
+
 class LocationNotFoundException(BaseDomainException):
     _exception_text_template = "Локация с id {location_id} не найдена"
 

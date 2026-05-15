@@ -1,4 +1,4 @@
-import logging
+from src.core.logger import logger
 
 from src.infrastructure.sqlite.database import database
 from src.infrastructure.sqlite.repositories.category_repository import (
@@ -7,8 +7,6 @@ from src.infrastructure.sqlite.repositories.category_repository import (
 from src.schemas.category import Category as CategorySchema
 from src.core.exceptions.database_exceptions import CategoryNotFoundException
 from src.core.exceptions.domain_exceptions import CategoryNotFoundBySlugException
-
-logger = logging.getLogger(__name__)
 
 
 class GetCategoryBySlugUseCase:

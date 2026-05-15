@@ -3,10 +3,11 @@ from fastapi import APIRouter, Depends, status
 from src.api.depends import get_category_use_cases
 from src.domain.category.use_cases.category_use_cases import CategoryUseCases
 from src.schemas.category import Category, CategoryCreate, CategoryUpdate
-from src.core.exceptions.api_exceptions import NotFoundException
+from src.core.exceptions.api_exceptions import NotFoundException, ConflictException
 from src.core.exceptions.domain_exceptions import (
     CategoryNotFoundException,
     CategoryNotFoundBySlugException,
+    CategorySlugAlreadyExistsException,
 )
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
@@ -48,7 +49,10 @@ async def create_category(
     category_data: CategoryCreate,
     use_cases: CategoryUseCases = Depends(get_category_use_cases),
 ):
-    return await use_cases.create(category_data)
+    try:
+        return await use_cases.create(category_data)
+    except CategorySlugAlreadyExistsException as e:
+        raise ConflictException(detail=e.get_detail())
 
 
 @router.put("/{id}", response_model=Category)

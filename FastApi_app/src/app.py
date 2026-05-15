@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+import time
+from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from src.api.routers import (
     category_router,
@@ -9,10 +11,23 @@ from src.api.routers import (
     users_router,
     auth_router,
 )
+from src.core.logger import logger
 
 
 def create_app() -> FastAPI:
     app = FastAPI()
+
+    @app.middleware("http")
+    async def log_requests(request: Request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        logger.info(
+            f"{request.method} {request.url.path} - "
+            f"Status: {response.status_code} - "
+            f"Duration: {process_time:.3f}s"
+        )
+        return response
 
     app.add_middleware(
         CORSMiddleware,
@@ -28,5 +43,7 @@ def create_app() -> FastAPI:
     app.include_router(location_router)
     app.include_router(comments_router)
     app.include_router(users_router)
+
+    app.mount("/media", StaticFiles(directory="media"), name="media")
 
     return app

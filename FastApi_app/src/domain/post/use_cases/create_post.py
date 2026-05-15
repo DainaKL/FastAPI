@@ -1,4 +1,4 @@
-import logging
+from src.core.logger import logger
 
 from src.infrastructure.sqlite.database import database
 from src.infrastructure.sqlite.repositories.post_repository import PostRepository
@@ -18,8 +18,6 @@ from src.core.exceptions.domain_exceptions import (
     CategoryNotFoundException as DomainCategoryNotFoundException,
     LocationNotFoundException as DomainLocationNotFoundException,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class CreatePostUseCase:
@@ -63,8 +61,7 @@ class CreatePostUseCase:
                         logger.error(error.get_detail())
                         raise error
 
-                post_dict = data.model_dump()
-                post = self._repo.create(session=session, **post_dict)
+                post = self._repo.create(session=session, post=data)
                 return PostSchema.model_validate(post, from_attributes=True)
         except (
             UserNotFoundByLoginException,

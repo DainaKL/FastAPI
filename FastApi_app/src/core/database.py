@@ -14,9 +14,6 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def get_db() -> Session:
     db = SessionLocal()
     try:
-        yield db
+        return db
     finally:
         db.close()
-
-def get_async_session():
-    return get_db()

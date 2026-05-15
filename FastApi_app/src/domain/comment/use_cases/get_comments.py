@@ -1,11 +1,9 @@
-import logging
+from src.core.logger import logger
 
 from src.infrastructure.sqlite.database import database
 from src.infrastructure.sqlite.repositories.comment_repository import CommentRepository
 from src.schemas.comments import Comment as CommentSchema
 from src.core.exceptions.database_exceptions import DatabaseOperationException
-
-logger = logging.getLogger(__name__)
 
 
 class GetCommentsUseCase:

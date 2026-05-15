@@ -45,23 +45,23 @@ class LocationRepository:
         if existing:
             raise LocationAlreadyExistsException(name=location.name)
         try:
-            query = (
-                insert(self._model).values(location.model_dump()).returning(self._model)
-            )
-            return session.scalar(query)
+            query = insert(self._model).values(location.model_dump()).returning(self._model)
+            result = session.execute(query)
+            session.flush()
+            return result.scalar_one()
         except IntegrityError as e:
             raise DatabaseOperationException("create", str(e))
 
     def update(self, session: Session, location_id: int, **kwargs):
-        query = (
-            update(self._model)
-            .where(self._model.id == location_id)
-            .values(**kwargs)
-            .returning(self._model)
-        )
-        return session.scalar(query)
+        query = update(self._model).where(self._model.id == location_id).values(**kwargs).returning(self._model)
+        result = session.execute(query)
+        session.flush()
+        return result.scalar_one_or_none()
 
     def delete(self, session: Session, location_id: int):
-        query = delete(self._model).where(self._model.id == location_id)
-        result = session.execute(query)
-        return result.rowcount > 0
+        location = session.get(self._model, location_id)
+        if location:
+            session.delete(location)
+            session.flush()
+            return True
+        return False

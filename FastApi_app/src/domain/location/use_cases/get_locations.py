@@ -1,4 +1,4 @@
-import logging
+from src.core.logger import logger
 
 from src.infrastructure.sqlite.database import database
 from src.infrastructure.sqlite.repositories.location_repository import (
@@ -6,8 +6,6 @@ from src.infrastructure.sqlite.repositories.location_repository import (
 )
 from src.schemas.location import Location as LocationSchema
 from src.core.exceptions.database_exceptions import DatabaseOperationException
-
-logger = logging.getLogger(__name__)
 
 
 class GetLocationsUseCase:
