@@ -33,9 +33,61 @@ class CredentialsException(HTTPException):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-class ForbiddenException(HTTPException):
-    def __init__(self, detail: str = "Нет прав для выполнения операции") -> None:
+
+class UserAlreadyExistsException(ConflictException):
+    def __init__(self, login: str):
+        super().__init__(detail=f"Пользователь с логином '{login}' уже существует")
+
+
+class UserNotFoundException(NotFoundException):
+    def __init__(self, user_id: int = None, login: str = None):
+        if user_id:
+            detail = f"Пользователь с id '{user_id}' не найден"
+        elif login:
+            detail = f"Пользователь с логином '{login}' не найден"
+        else:
+            detail = "Пользователь не найден"
+        super().__init__(detail=detail)
+
+
+class UserDeletedSuccessfullyException(HTTPException):
+    def __init__(self, user_id: int, login: str = None):
+        message = f"Пользователь с id '{user_id}' успешно удален"
+        if login:
+            message = f"Пользователь '{login}' успешно удален"
         super().__init__(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=detail,
+            status_code=status.HTTP_200_OK,
+            detail={
+                "status": "success",
+                "message": message,
+                "user_id": user_id
+            }
         )
+
+
+class ProfileUpdatedSuccessfullyException(HTTPException):
+    def __init__(self, user_id: int, login: str):
+        super().__init__(
+            status_code=status.HTTP_200_OK,
+            detail={
+                "status": "success",
+                "message": f"Профиль пользователя '{login}' успешно обновлен",
+                "user_id": user_id,
+                "login": login
+            }
+        )
+
+
+class InvalidCredentialsException(CredentialsException):
+    def __init__(self):
+        super().__init__(detail="Неверный логин или пароль")
+
+
+class InvalidTokenException(CredentialsException):
+    def __init__(self):
+        super().__init__(detail="Недействительный токен")
+
+
+class AdminRequiredException(ForbiddenException):
+    def __init__(self):
+        super().__init__(detail="Требуются права администратора")

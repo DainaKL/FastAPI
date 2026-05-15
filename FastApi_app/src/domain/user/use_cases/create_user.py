@@ -1,26 +1,22 @@
-import hashlib
-import logging
 from src.infrastructure.sqlite.repositories.user_repository import UserRepository
-from src.schemas.users import User as UserSchema, UserCreate
-from src.core.exceptions.domain_exceptions import UserLoginIsNotUniqueException
+from src.schemas.users import User as UserSchema
 from src.core.database import SessionLocal
-
-logger = logging.getLogger(__name__)
+from src.core.exceptions.domain_exceptions import UserLoginIsNotUniqueException
 
 
 class CreateUserUseCase:
-    def __init__(self) -> None:
+    def __init__(self):
         self._repo = UserRepository()
 
-    async def execute(self, data: UserCreate) -> UserSchema:
+    def execute(self, login: str, password: str) -> UserSchema:
         db = SessionLocal()
         try:
-            existing = self._repo.get_by_login(db, data.login)
-            if existing:
-                raise UserLoginIsNotUniqueException(login=data.login)
-
-            hashed_password = hashlib.sha256(data.password.encode()).hexdigest()
-            user = self._repo.create(db, login=data.login, password=hashed_password)
+            if self._repo.exists_by_login(db, login):
+                raise UserLoginIsNotUniqueException(login=login)
+            
+            user = self._repo.create(db, login=login, password=password)
+            db.commit()
+            
             return UserSchema.model_validate(user, from_attributes=True)
         finally:
             db.close()

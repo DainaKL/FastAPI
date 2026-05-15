@@ -9,7 +9,10 @@ class UserRepository:
     def get_by_id(self, session: Session, user_id: int):
         if user_id <= 0:
             return None
-        return session.get(UserModel, user_id)
+        query = select(UserModel).where(UserModel.id == user_id)
+        result = session.execute(query)
+        session.flush()
+        return result.scalar_one_or_none()
 
     def get_by_login(self, session: Session, login: str):
         if not login:
@@ -43,18 +46,15 @@ class UserRepository:
     def update(self, session: Session, user_id: int, **kwargs):
         if "password" in kwargs:
             kwargs["password"] = get_password_hash(kwargs["password"])
-        user = session.get(UserModel, user_id)
-        if not user:
-            return None
-        for key, value in kwargs.items():
-            setattr(user, key, value)
+        query = update(UserModel).where(UserModel.id == user_id).values(**kwargs).returning(UserModel)
+        result = session.execute(query)
         session.flush()
-        return user
+        return result.scalar_one_or_none()
 
     def delete(self, session: Session, user_id: int):
         user = session.get(UserModel, user_id)
         if user:
             session.delete(user)
-            session.flush()
-            return True
+        session.flush()
+        return True
         return False

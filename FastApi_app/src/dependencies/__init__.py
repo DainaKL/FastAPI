@@ -1,1 +1,1 @@
-from src.dependencies.auth import get_current_user
+from src.dependencies.auth import get_current_user, get_current_admin_user
