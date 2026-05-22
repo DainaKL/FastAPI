@@ -1,35 +1,27 @@
-from src.core.logger import logger
-from src.infrastructure.sqlite.database import database
+import logging
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.sqlite.repositories.location_repository import (
     LocationRepository,
 )
 from src.schemas.location import Location as LocationSchema, LocationCreate
-from src.core.exceptions.database_exceptions import (
-    DatabaseOperationException,
-)
-from src.core.exceptions.domain_exceptions import (
-    LocationAlreadyExistsException as DomainLocationAlreadyExistsException,
-)
+from src.core.exceptions.database_exceptions import DatabaseOperationException
+from src.core.exceptions.domain_exceptions import LocationAlreadyExistsException
+
+logger = logging.getLogger(__name__)
 
 
 class CreateLocationUseCase:
     def __init__(self) -> None:
-        self._database = database
         self._repo = LocationRepository()
 
-    async def execute(self, data: LocationCreate) -> LocationSchema:
-        try:
-            with self._database.session() as session:
-                existing = self._repo.get_by_name(session=session, name=data.name)
-                if existing:
-                    error = DomainLocationAlreadyExistsException(name=data.name)
-                    logger.error(error.get_detail())
-                    raise error
+    async def execute(self, db: AsyncSession, data: LocationCreate) -> LocationSchema:
+        existing = await self._repo.get_by_name(db, data.name)
+        if existing:
+            raise LocationAlreadyExistsException(name=data.name)
 
-                location = self._repo.create(session=session, location=data)
-                return LocationSchema.model_validate(location, from_attributes=True)
-        except DomainLocationAlreadyExistsException as e:
-            raise e
-        except DatabaseOperationException as e:
-            logger.error(e.get_detail())
-            raise
+        try:
+            location = await self._repo.create(db, **data.model_dump())
+            await db.flush()
+            return LocationSchema.model_validate(location)
+        except Exception as e:
+            raise DatabaseOperationException("create", str(e))

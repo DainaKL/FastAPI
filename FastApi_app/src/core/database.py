@@ -1,16 +1,25 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import declarative_base
+from src.core.config import settings
 
-DATABASE_URL = "sqlite:///./db.sqlite3"
+Base = declarative_base()
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=settings.DEBUG,
+    future=True,
+)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+AsyncSessionLocal = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
 
 
-def get_db() -> Session:
-    db = SessionLocal()
-    try:
-        return db
-    finally:
-        db.close()
+async def get_db() -> AsyncSession:
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()

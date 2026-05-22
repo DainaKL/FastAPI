@@ -1,37 +1,31 @@
-from src.core.logger import logger
-
-from src.infrastructure.sqlite.database import database
+import logging
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.sqlite.repositories.comment_repository import CommentRepository
 from src.schemas.comments import Comment as CommentSchema, CommentUpdate
 from src.core.exceptions.database_exceptions import DatabaseOperationException
-from src.core.exceptions.domain_exceptions import (
-    CommentNotFoundException as DomainCommentNotFoundException,
-)
+from src.core.exceptions.domain_exceptions import CommentNotFoundException
+
+logger = logging.getLogger(__name__)
 
 
 class UpdateCommentUseCase:
     def __init__(self) -> None:
-        self._database = database
         self._repo = CommentRepository()
 
-    async def execute(self, comment_id: int, data: CommentUpdate) -> CommentSchema:
-        try:
-            with self._database.session() as session:
-                comment = self._repo.get_by_id(session=session, comment_id=comment_id)
-                if not comment:
-                    error = DomainCommentNotFoundException(comment_id=comment_id)
-                    logger.error(error.get_detail())
-                    raise error
+    async def execute(
+        self, db: AsyncSession, comment_id: int, data: CommentUpdate
+    ) -> CommentSchema:
+        comment = await self._repo.get_by_id(db, comment_id)
+        if not comment:
+            raise CommentNotFoundException(comment_id=comment_id)
 
-                update_dict = {
-                    k: v for k, v in data.model_dump().items() if v is not None
-                }
-                updated = self._repo.update(
-                    session=session, comment_id=comment_id, **update_dict
-                )
-                return CommentSchema.model_validate(updated, from_attributes=True)
-        except DomainCommentNotFoundException as e:
-            raise e
-        except DatabaseOperationException as e:
-            logger.error(e.get_detail())
-            raise
+        update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
+        if not update_dict:
+            return CommentSchema.model_validate(comment)
+
+        try:
+            updated = await self._repo.update(db, comment_id, **update_dict)
+            await db.flush()
+            return CommentSchema.model_validate(updated)
+        except Exception as e:
+            raise DatabaseOperationException("update", str(e))

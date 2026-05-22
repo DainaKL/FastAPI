@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Response, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from src.core.database import SessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.core.database import get_db
 from src.domain.auth.use_cases.authenticate_user import AuthenticateUserUseCase
 from src.domain.auth.use_cases.register_user import RegisterUserUseCase
 from src.domain.auth.use_cases.create_access_token import CreateAccessTokenUseCase
-from src.infrastructure.sqlite.repositories.user_repository import UserRepository
 from src.core.exceptions.domain_exceptions import (
     UserNotFoundByLoginException,
     UserLoginIsNotUniqueException,
@@ -12,63 +12,29 @@ from src.core.exceptions.domain_exceptions import (
 from src.core.exceptions.auth_exceptions import InvalidPasswordException
 from src.core.exceptions.api_exceptions import (
     UserAlreadyExistsException,
-    InvalidCredentialsException,
 )
+from src.schemas.users import User
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register")
-def register(login: str, password: str):
-    db = SessionLocal()
+@router.post("/register", response_model=User)
+async def register(login: str, password: str, db: AsyncSession = Depends(get_db)):
     try:
         use_case = RegisterUserUseCase()
-        user = use_case.execute(db, login, password)
-        return {"id": user.id, "login": user.login, "is_admin": user.is_admin}
+        user = await use_case.execute(db, login, password)
+        return User.model_validate(user)
     except UserLoginIsNotUniqueException:
         raise UserAlreadyExistsException(login=login)
-    finally:
-        db.close()
-
-
-@router.post("/login")
-def login(login: str, password: str, response: Response):
-    db = SessionLocal()
-    try:
-        auth_use_case = AuthenticateUserUseCase()
-        user = auth_use_case.execute(db, login, password)
-
-        token_use_case = CreateAccessTokenUseCase()
-        access_token = token_use_case.execute(
-            user_id=user.id, login=user.login, is_admin=user.is_admin
-        )
-
-        response.set_cookie(
-            key="access_token",
-            value=f"Bearer {access_token}",
-            httponly=True,
-            max_age=1800,
-        )
-
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user_id": user.id,
-            "login": user.login,
-            "is_admin": user.is_admin,
-        }
-    except (UserNotFoundByLoginException, InvalidPasswordException):
-        raise InvalidCredentialsException()
-    finally:
-        db.close()
 
 
 @router.post("/token")
-def token(form_data: OAuth2PasswordRequestForm = Depends()):
-    db = SessionLocal()
+async def token(
+    form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
+):
     try:
         auth_use_case = AuthenticateUserUseCase()
-        user = auth_use_case.execute(db, form_data.username, form_data.password)
+        user = await auth_use_case.execute(db, form_data.username, form_data.password)
 
         token_use_case = CreateAccessTokenUseCase()
         access_token = token_use_case.execute(
@@ -85,23 +51,3 @@ def token(form_data: OAuth2PasswordRequestForm = Depends()):
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    finally:
-        db.close()
-
-
-@router.post("/create-admin")
-def create_admin(login: str, password: str):
-    db = SessionLocal()
-    try:
-        register_use_case = RegisterUserUseCase()
-        user = register_use_case.execute(db, login, password)
-
-        user_repo = UserRepository()
-        user_repo.update(db, user.id, is_admin=True)
-        db.commit()
-
-        return {"id": user.id, "login": user.login, "is_admin": True}
-    except UserLoginIsNotUniqueException:
-        raise UserAlreadyExistsException(login=login)
-    finally:
-        db.close()

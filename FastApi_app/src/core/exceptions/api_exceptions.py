@@ -298,3 +298,8 @@ class PostForbiddenException(ForbiddenException):
 class PostAuthRequiredException(ForbiddenException):
     def __init__(self):
         super().__init__(detail="Необходимо авторизоваться")
+
+
+class InvalidIDException(NotFoundException):
+    def __init__(self, id_value: any):
+        super().__init__(detail=f"Некорректный идентификатор '{id_value}'")

@@ -1,64 +1,36 @@
-from sqlalchemy import select, insert, update
-from sqlalchemy.orm import Session
+from typing import Optional
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.infrastructure.sqlite.models.users import User as UserModel
+from src.infrastructure.sqlite.repositories.base import BaseRepository
 from src.core.security import get_password_hash
 
 
-class UserRepository:
-    def get_by_id(self, session: Session, user_id: int):
-        if user_id <= 0:
-            return None
-        query = select(UserModel).where(UserModel.id == user_id)
-        result = session.execute(query)
-        session.flush()
-        return result.scalar_one_or_none()
+class UserRepository(BaseRepository[UserModel]):
+    def __init__(self):
+        super().__init__(UserModel)
 
-    def get_by_login(self, session: Session, login: str):
+    async def get_by_login(
+        self, session: AsyncSession, login: str
+    ) -> Optional[UserModel]:
         if not login:
             return None
-        query = select(UserModel).where(UserModel.login == login)
-        result = session.execute(query)
-        session.flush()
+        stmt = select(self.model).where(self.model.login == login)
+        result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
-    def exists_by_login(self, session: Session, login: str) -> bool:
+    async def exists_by_login(self, session: AsyncSession, login: str) -> bool:
         if not login:
             return False
-        query = select(UserModel).where(UserModel.login == login)
-        result = session.execute(query)
+        stmt = select(self.model).where(self.model.login == login)
+        result = await session.execute(stmt)
         return result.scalar_one_or_none() is not None
 
-    def get_all(self, session: Session, skip: int = 0, limit: int = 100):
-        query = select(UserModel).offset(skip).limit(limit)
-        result = session.execute(query)
-        session.flush()
-        return list(result.scalars().all())
-
-    def create(self, session: Session, login: str, password: str) -> UserModel:
+    async def create_user(
+        self, session: AsyncSession, login: str, password: str, is_admin: bool = False
+    ) -> UserModel:
         hashed_password = get_password_hash(password)
-        user_dict = {"login": login, "password": hashed_password}
-        query = insert(UserModel).values(**user_dict).returning(UserModel)
-        result = session.execute(query)
-        session.flush()
-        return result.scalar_one()
-
-    def update(self, session: Session, user_id: int, **kwargs):
-        if "password" in kwargs:
-            kwargs["password"] = get_password_hash(kwargs["password"])
-        query = (
-            update(UserModel)
-            .where(UserModel.id == user_id)
-            .values(**kwargs)
-            .returning(UserModel)
+        return await self.create(
+            session, login=login, password=hashed_password, is_admin=is_admin
         )
-        result = session.execute(query)
-        session.flush()
-        return result.scalar_one_or_none()
-
-    def delete(self, session: Session, user_id: int):
-        user = session.get(UserModel, user_id)
-        if user:
-            session.delete(user)
-        session.flush()
-        return True
-        return False

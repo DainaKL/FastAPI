@@ -1,34 +1,29 @@
-from src.core.logger import logger
-
-from src.infrastructure.sqlite.database import database
+import logging
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.sqlite.repositories.comment_repository import CommentRepository
 from src.infrastructure.sqlite.repositories.post_repository import PostRepository
 from src.schemas.comments import Comment as CommentSchema, CommentCreate
 from src.core.exceptions.database_exceptions import DatabaseOperationException
 from src.core.exceptions.domain_exceptions import PostNotFoundException
 
+logger = logging.getLogger(__name__)
+
 
 class CreateCommentUseCase:
     def __init__(self) -> None:
-        self._database = database
         self._repo = CommentRepository()
         self._post_repo = PostRepository()
 
-    async def execute(self, comment_data: CommentCreate) -> CommentSchema:
-        try:
-            with self._database.session() as session:
-                post = self._post_repo.get_by_id(
-                    session=session, post_id=comment_data.post_id
-                )
-                if not post:
-                    error = PostNotFoundException(post_id=comment_data.post_id)
-                    logger.error(error.get_detail())
-                    raise error
+    async def execute(
+        self, db: AsyncSession, comment_data: CommentCreate
+    ) -> CommentSchema:
+        post = await self._post_repo.get_by_id(db, comment_data.post_id)
+        if not post:
+            raise PostNotFoundException(post_id=comment_data.post_id)
 
-                comment = self._repo.create(session=session, comment=comment_data)
-                return CommentSchema.model_validate(comment, from_attributes=True)
-        except PostNotFoundException as e:
-            raise e
-        except DatabaseOperationException as e:
-            logger.error(e.get_detail())
-            raise
+        try:
+            comment = await self._repo.create(db, **comment_data.model_dump())
+            await db.flush()
+            return CommentSchema.model_validate(comment)
+        except Exception as e:
+            raise DatabaseOperationException("create", str(e))

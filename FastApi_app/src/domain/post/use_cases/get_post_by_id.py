@@ -1,25 +1,24 @@
-from src.core.logger import logger
-from src.infrastructure.sqlite.database import database
+import logging
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.sqlite.repositories.post_repository import PostRepository
 from src.schemas.posts import Post as PostSchema
 from src.core.exceptions.database_exceptions import DatabaseOperationException
 from src.core.exceptions.domain_exceptions import PostNotFoundException
 
+logger = logging.getLogger(__name__)
+
 
 class GetPostByIdUseCase:
     def __init__(self) -> None:
-        self._database = database
         self._repo = PostRepository()
 
-    async def execute(self, post_id: int) -> PostSchema:
+    async def execute(self, db: AsyncSession, post_id: int) -> PostSchema:
         try:
-            with self._database.session() as session:
-                post = self._repo.get_by_id(session=session, post_id=post_id)
-                if not post:
-                    raise PostNotFoundException(post_id=post_id)
-                return PostSchema.model_validate(post, from_attributes=True)
+            post = await self._repo.get_by_id(db, post_id)
+            if not post:
+                raise PostNotFoundException(post_id=post_id)
+            return PostSchema.model_validate(post)
         except PostNotFoundException as e:
             raise e
-        except DatabaseOperationException as e:
-            logger.error(e.get_detail())
-            raise
+        except Exception as e:
+            raise DatabaseOperationException("get_by_id", str(e))

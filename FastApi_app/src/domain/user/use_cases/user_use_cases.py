@@ -1,3 +1,4 @@
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.user.use_cases.get_users import GetUsersUseCase
 from src.domain.user.use_cases.get_user import GetUserUseCase
 from src.domain.user.use_cases.create_user import CreateUserUseCase
@@ -13,17 +14,17 @@ class UserUseCases:
         self._update = UpdateUserUseCase()
         self._delete = DeleteUserUseCase()
 
-    def get_all(self, skip: int = 0, limit: int = 100):
-        return self._get_all.execute(skip=skip, limit=limit)
+    async def get_all(self, db: AsyncSession, skip: int = 0, limit: int = 100):
+        return await self._get_all.execute(db, skip=skip, limit=limit)
 
-    def get_by_id(self, user_id: int):
-        return self._get_by_id.execute(user_id)
+    async def get_by_id(self, db: AsyncSession, user_id: int):
+        return await self._get_by_id.execute(db, user_id)
 
-    def create(self, login: str, password: str):
-        return self._create.execute(login, password)
+    async def create(self, db: AsyncSession, login: str, password: str):
+        return await self._create.execute(db, login, password)
 
-    def update(self, user_id: int, user_data):
-        return self._update.execute(user_id, user_data)
+    async def update(self, db: AsyncSession, user_id: int, user_data):
+        return await self._update.execute(db, user_id, user_data)
 
-    def delete(self, user_id: int):
-        return self._delete.execute(user_id)
+    async def delete(self, db: AsyncSession, user_id: int):
+        return await self._delete.execute(db, user_id)

@@ -1,16 +1,16 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.sqlite.repositories.user_repository import UserRepository
 from src.core.exceptions.domain_exceptions import UserLoginIsNotUniqueException
 
 
 class RegisterUserUseCase:
-    def execute(self, db: Session, login: str, password: str):
+    async def execute(self, db: AsyncSession, login: str, password: str):
         repo = UserRepository()
 
-        if repo.exists_by_login(db, login):
+        if await repo.exists_by_login(db, login):
             raise UserLoginIsNotUniqueException(login=login)
 
-        user = repo.create(db, login=login, password=password)
-        db.commit()
+        user = await repo.create_user(db, login=login, password=password)
+        await db.commit()
 
         return user

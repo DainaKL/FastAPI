@@ -1,51 +1,23 @@
-from typing import Type
-from sqlalchemy import select, insert, update
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from typing import Optional, List
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.sqlite.models.post import Post as PostModel
-from src.schemas.posts import PostCreate as PostSchema
-from src.core.exceptions.database_exceptions import DatabaseOperationException
+from src.infrastructure.sqlite.repositories.base import BaseRepository
 
 
-class PostRepository:
+class PostRepository(BaseRepository[PostModel]):
     def __init__(self):
-        self._model: Type[PostModel] = PostModel
+        super().__init__(PostModel)
 
-    def get_by_id(self, session: Session, post_id: int):
+    async def get_by_id(
+        self, session: AsyncSession, post_id: int
+    ) -> Optional[PostModel]:
         if post_id <= 0:
             return None
-        query = select(self._model).where(self._model.id == post_id)
-        return session.scalar(query)
+        return await super().get_by_id(session, post_id)
 
-    def get_all(self, session: Session, skip: int = 0, limit: int = 100):
-        query = select(self._model).offset(skip).limit(limit)
-        return list(session.scalars(query).all())
-
-    def create(self, session: Session, post: PostSchema) -> PostModel:
-        try:
-            query = insert(self._model).values(post.model_dump()).returning(self._model)
-            result = session.execute(query)
-            session.flush()
-            return result.scalar_one()
-        except IntegrityError as e:
-            raise DatabaseOperationException("create", str(e))
-
-    def update(self, session: Session, post_id: int, **kwargs):
-        query = (
-            update(self._model)
-            .where(self._model.id == post_id)
-            .values(**kwargs)
-            .returning(self._model)
-        )
-        result = session.execute(query)
-        session.flush()
-        return result.scalar_one_or_none()
-
-    def delete(self, session: Session, post_id: int):
-        post = session.get(self._model, post_id)
-        if post:
-            session.delete(post)
-            session.flush()
-            return True
-        return False
+    async def get_all(
+        self, session: AsyncSession, skip: int = 0, limit: int = 100
+    ) -> List[PostModel]:
+        return await super().get_all(session, skip, limit)

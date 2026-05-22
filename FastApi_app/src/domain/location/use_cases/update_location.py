@@ -1,41 +1,33 @@
-from src.core.logger import logger
-
-from src.infrastructure.sqlite.database import database
+import logging
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.sqlite.repositories.location_repository import (
     LocationRepository,
 )
 from src.schemas.location import Location as LocationSchema, LocationUpdate
 from src.core.exceptions.database_exceptions import DatabaseOperationException
-from src.core.exceptions.domain_exceptions import (
-    LocationNotFoundException as DomainLocationNotFoundException,
-)
+from src.core.exceptions.domain_exceptions import LocationNotFoundException
+
+logger = logging.getLogger(__name__)
 
 
 class UpdateLocationUseCase:
     def __init__(self) -> None:
-        self._database = database
         self._repo = LocationRepository()
 
-    async def execute(self, location_id: int, data: LocationUpdate) -> LocationSchema:
-        try:
-            with self._database.session() as session:
-                location = self._repo.get_by_id(
-                    session=session, location_id=location_id
-                )
-                if not location:
-                    error = DomainLocationNotFoundException(location_id=location_id)
-                    logger.error(error.get_detail())
-                    raise error
+    async def execute(
+        self, db: AsyncSession, location_id: int, data: LocationUpdate
+    ) -> LocationSchema:
+        location = await self._repo.get_by_id(db, location_id)
+        if not location:
+            raise LocationNotFoundException(location_id=location_id)
 
-                update_dict = {
-                    k: v for k, v in data.model_dump().items() if v is not None
-                }
-                updated = self._repo.update(
-                    session=session, location_id=location_id, **update_dict
-                )
-                return LocationSchema.model_validate(updated, from_attributes=True)
-        except DomainLocationNotFoundException as e:
-            raise e
-        except DatabaseOperationException as e:
-            logger.error(e.get_detail())
-            raise
+        update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
+        if not update_dict:
+            return LocationSchema.model_validate(location)
+
+        try:
+            updated = await self._repo.update(db, location_id, **update_dict)
+            await db.flush()
+            return LocationSchema.model_validate(updated)
+        except Exception as e:
+            raise DatabaseOperationException("update", str(e))

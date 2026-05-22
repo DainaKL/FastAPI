@@ -1,16 +1,11 @@
 from logging.config import fileConfig
-
-from alembic import context
 from sqlalchemy import engine_from_config, pool
-
+from alembic import context
+from src.core.config import settings
 from src.infrastructure.sqlite.database import Base
-from src.infrastructure.sqlite.models.users import *
-from src.infrastructure.sqlite.models.post import *
-from src.infrastructure.sqlite.models.comment import *
-from src.infrastructure.sqlite.models.category import *
-from src.infrastructure.sqlite.models.location import *
 
 config = context.config
+config.set_main_option("sqlalchemy.url", settings.DATABASE_SYNC_URL)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -40,7 +35,6 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            render_as_batch=True,
         )
         with context.begin_transaction():
             context.run_migrations()

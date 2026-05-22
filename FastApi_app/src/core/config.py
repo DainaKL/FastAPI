@@ -1,5 +1,5 @@
-from pydantic import SecretStr
 from pydantic_settings import BaseSettings
+from pydantic import SecretStr
 
 
 class Settings(BaseSettings):
@@ -8,11 +8,11 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    SECRET_AUTH_KEY: SecretStr = SecretStr("your-secret-key-change-in-production")
+    SECRET_AUTH_KEY: SecretStr
     AUTH_ALGORITHM: str = "HS256"
 
-    DATABASE_URL: str = "sqlite+aiosqlite:///./db.sqlite3"
-    DB_ECHO: bool = True
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@db:5432/fastapi_db"
+    DATABASE_SYNC_URL: str = "postgresql://postgres:postgres@db:5432/fastapi_db"
 
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/app.log"
@@ -20,7 +20,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
-        extra = "ignore"
 
 
 settings = Settings()

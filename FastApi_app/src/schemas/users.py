@@ -1,5 +1,5 @@
 import re
-from pydantic import field_validator
+from pydantic import field_validator, BaseModel
 
 from src.schemas.base import BaseSchema
 
@@ -21,8 +21,22 @@ class UserBase(BaseSchema):
         return v
 
 
-class UserCreate(UserBase):
+class UserCreate(BaseSchema):
+    login: str
     password: str
+
+    @field_validator("login")
+    @classmethod
+    def validate_login(cls, v: str) -> str:
+        if len(v) < 3:
+            raise ValueError("Логин должен содержать минимум 3 символа")
+        if len(v) > 50:
+            raise ValueError("Логин должен содержать максимум 50 символов")
+        if not re.match(r"^[a-zA-Z0-9_]+$", v):
+            raise ValueError(
+                "Логин может содержать только буквы, цифры и символ подчеркивания"
+            )
+        return v
 
     @field_validator("password")
     @classmethod
@@ -37,6 +51,7 @@ class UserCreate(UserBase):
 class UserUpdate(BaseSchema):
     login: str | None = None
     password: str | None = None
+    is_admin: bool | None = None
 
     @field_validator("login")
     @classmethod
@@ -65,3 +80,7 @@ class UserUpdate(BaseSchema):
 
 class User(UserBase):
     id: int
+    is_admin: bool = False
+
+    class Config:
+        from_attributes = True

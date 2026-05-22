@@ -1,6 +1,5 @@
-from src.core.logger import logger
-
-from src.infrastructure.sqlite.database import database
+import logging
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.sqlite.repositories.location_repository import (
     LocationRepository,
 )
@@ -8,21 +7,20 @@ from src.schemas.location import Location as LocationSchema
 from src.core.exceptions.database_exceptions import DatabaseOperationException
 from src.core.exceptions.domain_exceptions import LocationNotFoundByNameException
 
+logger = logging.getLogger(__name__)
+
 
 class GetLocationByNameUseCase:
     def __init__(self) -> None:
-        self._database = database
         self._repo = LocationRepository()
 
-    async def execute(self, name: str) -> LocationSchema:
+    async def execute(self, db: AsyncSession, name: str) -> LocationSchema:
         try:
-            with self._database.session() as session:
-                location = self._repo.get_by_name(session=session, name=name)
-                if not location:
-                    raise LocationNotFoundByNameException(name=name)
-                return LocationSchema.model_validate(location, from_attributes=True)
+            location = await self._repo.get_by_name(db, name)
+            if not location:
+                raise LocationNotFoundByNameException(name=name)
+            return LocationSchema.model_validate(location)
         except LocationNotFoundByNameException as e:
             raise e
-        except DatabaseOperationException as e:
-            logger.error(e.get_detail())
-            raise
+        except Exception as e:
+            raise DatabaseOperationException("get_by_name", str(e))
