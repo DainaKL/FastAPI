@@ -108,6 +108,9 @@ async def upload_post_image(
     current_user: dict = Depends(get_current_user),
 ):
     try:
+        if not current_user:
+            raise ForbiddenException(detail="Необходимо авторизоваться")
+
         post = await get_post_use_case.execute(post_id=id)
         if not current_user.get("is_admin") and post.author_id != current_user["id"]:
             raise ForbiddenException(detail="Вы можете редактировать только свои посты")

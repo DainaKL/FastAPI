@@ -273,10 +273,3 @@ class LocationCreatedSuccessfullyException(HTTPException):
                 "location_id": location_id,
             },
         )
-
-
-class NotYourResourceException(ForbiddenException):
-    def __init__(self, resource_name: str = "ресурс"):
-        super().__init__(
-            detail=f"Вы можете редактировать/удалять только свой {resource_name}"
-        )
