@@ -15,7 +15,14 @@ from src.core.logger import logger
 
 
 def create_app() -> FastAPI:
-    app = FastAPI()
+    app = FastAPI(
+        title="FastAPI Blog API",
+        version="1.0.0",
+        swagger_ui_parameters={
+            "persistAuthorization": True,
+            "displayRequestDuration": True,
+        },
+    )
 
     @app.middleware("http")
     async def log_requests(request: Request, call_next):

@@ -273,3 +273,28 @@ class LocationCreatedSuccessfullyException(HTTPException):
                 "location_id": location_id,
             },
         )
+
+
+class CategoryForbiddenException(ForbiddenException):
+    def __init__(self, action: str = "выполнения операции"):
+        super().__init__(detail=f"Только администратор может {action} категории")
+
+
+class CommentForbiddenException(ForbiddenException):
+    def __init__(self, action: str = "редактировать/удалять"):
+        super().__init__(detail=f"Вы можете {action} только свои комментарии")
+
+
+class LocationForbiddenException(ForbiddenException):
+    def __init__(self, action: str = "выполнения операции"):
+        super().__init__(detail=f"Только администратор может {action} локации")
+
+
+class PostForbiddenException(ForbiddenException):
+    def __init__(self, action: str = "редактировать/удалять"):
+        super().__init__(detail=f"Вы можете {action} только свои посты")
+
+
+class PostAuthRequiredException(ForbiddenException):
+    def __init__(self):
+        super().__init__(detail="Необходимо авторизоваться")

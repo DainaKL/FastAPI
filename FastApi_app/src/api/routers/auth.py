@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from src.core.database import SessionLocal
 from src.domain.auth.use_cases.authenticate_user import AuthenticateUserUseCase
 from src.domain.auth.use_cases.register_user import RegisterUserUseCase
@@ -58,6 +59,32 @@ def login(login: str, password: str, response: Response):
         }
     except (UserNotFoundByLoginException, InvalidPasswordException):
         raise InvalidCredentialsException()
+    finally:
+        db.close()
+
+
+@router.post("/token")
+def token(form_data: OAuth2PasswordRequestForm = Depends()):
+    db = SessionLocal()
+    try:
+        auth_use_case = AuthenticateUserUseCase()
+        user = auth_use_case.execute(db, form_data.username, form_data.password)
+
+        token_use_case = CreateAccessTokenUseCase()
+        access_token = token_use_case.execute(
+            user_id=user.id, login=user.login, is_admin=user.is_admin
+        )
+
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+        }
+    except (UserNotFoundByLoginException, InvalidPasswordException):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     finally:
         db.close()
 

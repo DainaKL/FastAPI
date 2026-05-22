@@ -18,7 +18,11 @@ from src.domain.post.use_cases.create_post import CreatePostUseCase
 from src.domain.post.use_cases.update_post import UpdatePostUseCase
 from src.domain.post.use_cases.delete_post import DeletePostUseCase
 from src.schemas.posts import Post, PostCreate, PostUpdate
-from src.core.exceptions.api_exceptions import NotFoundException, ForbiddenException
+from src.core.exceptions.api_exceptions import (
+    NotFoundException,
+    PostForbiddenException,
+    PostAuthRequiredException,
+)
 from src.core.exceptions.domain_exceptions import (
     PostNotFoundException,
     CategoryNotFoundException,
@@ -72,8 +76,8 @@ async def update_post(
     try:
         post = await get_post_use_case.execute(post_id=id)
         if not current_user.get("is_admin") and post.author_id != current_user["id"]:
-            raise ForbiddenException(detail="Вы можете редактировать только свои посты")
-
+            raise PostForbiddenException(action="редактировать")
+        
         return await update_use_case.execute(post_id=id, data=post_data)
     except PostNotFoundException as e:
         raise NotFoundException(detail=e.get_detail())
@@ -91,8 +95,8 @@ async def delete_post(
     try:
         post = await get_post_use_case.execute(post_id=id)
         if not current_user.get("is_admin") and post.author_id != current_user["id"]:
-            raise ForbiddenException(detail="Вы можете удалять только свои посты")
-
+            raise PostForbiddenException(action="удалять")
+        
         await delete_use_case.execute(post_id=id)
         return {"status": "success", "message": f"Post {id} deleted"}
     except PostNotFoundException as e:
@@ -107,14 +111,14 @@ async def upload_post_image(
     update_use_case: UpdatePostUseCase = Depends(get_update_post_use_case),
     current_user: dict = Depends(get_current_user),
 ):
+    if not current_user:
+        raise PostAuthRequiredException()
+    
     try:
-        if not current_user:
-            raise ForbiddenException(detail="Необходимо авторизоваться")
-
         post = await get_post_use_case.execute(post_id=id)
         if not current_user.get("is_admin") and post.author_id != current_user["id"]:
-            raise ForbiddenException(detail="Вы можете редактировать только свои посты")
-
+            raise PostForbiddenException(action="редактировать")
+        
         media_dir = Path("media/post_images")
         media_dir.mkdir(parents=True, exist_ok=True)
 

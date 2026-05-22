@@ -7,7 +7,7 @@ from src.schemas.category import Category, CategoryCreate, CategoryUpdate
 from src.core.exceptions.api_exceptions import (
     NotFoundException,
     ConflictException,
-    ForbiddenException,
+    CategoryForbiddenException,
 )
 from src.core.exceptions.domain_exceptions import (
     CategoryNotFoundException,
@@ -68,12 +68,10 @@ async def update_category(
     use_cases: CategoryUseCases = Depends(get_category_use_cases),
     current_user: dict = Depends(get_current_user),
 ):
+    if not current_user.get("is_admin"):
+        raise CategoryForbiddenException(action="редактировать")
+    
     try:
-        if not current_user.get("is_admin"):
-            raise ForbiddenException(
-                detail="Только администратор может редактировать категории"
-            )
-
         return await use_cases.update(id, category_data)
     except CategoryNotFoundException as e:
         raise NotFoundException(detail=e.get_detail())
@@ -85,12 +83,10 @@ async def delete_category(
     use_cases: CategoryUseCases = Depends(get_category_use_cases),
     current_user: dict = Depends(get_current_user),
 ):
+    if not current_user.get("is_admin"):
+        raise CategoryForbiddenException(action="удалять")
+    
     try:
-        if not current_user.get("is_admin"):
-            raise ForbiddenException(
-                detail="Только администратор может удалять категории"
-            )
-
         await use_cases.delete(id)
         return {"status": "success", "message": f"Category {id} deleted"}
     except CategoryNotFoundException as e:

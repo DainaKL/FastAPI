@@ -4,7 +4,10 @@ from src.api.depends import get_comment_use_cases
 from src.dependencies.auth import get_current_user
 from src.domain.comment.use_cases.comment_use_cases import CommentUseCases
 from src.schemas.comments import Comment, CommentCreate, CommentUpdate
-from src.core.exceptions.api_exceptions import NotFoundException, ForbiddenException
+from src.core.exceptions.api_exceptions import (
+    NotFoundException,
+    CommentForbiddenException,
+)
 from src.core.exceptions.domain_exceptions import (
     CommentNotFoundException,
     PostNotFoundException,
@@ -85,10 +88,8 @@ async def update_comment(
     try:
         comment = await use_cases.get_by_id(comment_id)
         if not current_user.get("is_admin") and comment.author_id != current_user["id"]:
-            raise ForbiddenException(
-                detail="Вы можете редактировать только свои комментарии"
-            )
-
+            raise CommentForbiddenException(action="редактировать")
+        
         return await use_cases.update(comment_id, comment_data)
     except CommentNotFoundException as e:
         raise NotFoundException(detail=e.get_detail())
@@ -103,8 +104,8 @@ async def delete_comment(
     try:
         comment = await use_cases.get_by_id(comment_id)
         if not current_user.get("is_admin") and comment.author_id != current_user["id"]:
-            raise ForbiddenException(detail="Вы можете удалять только свои комментарии")
-
+            raise CommentForbiddenException(action="удалять")
+        
         await use_cases.delete(comment_id)
         return {"status": "success", "message": f"Comment {comment_id} deleted"}
     except CommentNotFoundException as e:
