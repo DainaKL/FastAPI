@@ -1,7 +1,7 @@
-import time
 from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
 
 from src.api.routers import (
     category_router,
@@ -12,12 +12,22 @@ from src.api.routers import (
     auth_router,
 )
 from src.core.logger import logger
+from src.core.init_admin import init_admin
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Запуск инициализации...")
+    await init_admin()
+    print("Инициализация завершена")
+    yield
 
 
 def create_app() -> FastAPI:
     app = FastAPI(
         title="FastAPI Blog API",
         version="1.0.0",
+        lifespan=lifespan,
         swagger_ui_parameters={
             "persistAuthorization": True,
             "displayRequestDuration": True,
@@ -26,6 +36,7 @@ def create_app() -> FastAPI:
 
     @app.middleware("http")
     async def log_requests(request: Request, call_next):
+        import time
         start_time = time.time()
         response = await call_next(request)
         process_time = time.time() - start_time

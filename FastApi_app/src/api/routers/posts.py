@@ -92,12 +92,19 @@ async def delete_post(
     db: AsyncSession = Depends(get_db),
 ):
     validate_id(id)
-    post = await use_case.get_by_id(db, id)
+
+    from src.infrastructure.sqlite.repositories.post_repository import PostRepository
+    repo = PostRepository()
+    post = await repo.get_by_id(db, id)
+    
+    if not post:
+        raise NotFoundException(detail=f"Post {id} not found")
+    
     if not current_user.is_admin and post.author_id != current_user.id:
         raise PostForbiddenException(action="удалять")
+    
     await use_case.execute(db, id)
     return {"status": "success", "message": f"Post {id} deleted"}
-
 
 @router.post("/posts/{id}/image", response_model=Post)
 async def upload_post_image(

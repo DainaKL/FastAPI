@@ -1,34 +1,25 @@
 services:
   db:
-    image: postgres:16
+    image: postgres:17-alpine3.21
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: fastapi_db
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    ports:
+      - "5432:5432"
 
   app:
     build: .
     ports:
       - "8000:8000"
-    volumes:
-      - ./media:/app/media
     depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/fastapi_db
-      DATABASE_SYNC_URL: postgresql://postgres:postgres@db:5432/fastapi_db
-      SECRET_AUTH_KEY: your-super-secret-key-change-this
-      DEBUG: "True"
+      - db
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
 
 volumes:
   postgres_data:

@@ -5,7 +5,7 @@ from src.infrastructure.sqlite.database import Base
 
 
 class User(Base):
-    __tablename__ = "auth_user"
+    __tablename__ = "users"  
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     login: Mapped[str] = mapped_column(String(150), nullable=False, unique=True)

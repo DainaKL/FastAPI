@@ -13,17 +13,18 @@ from src.core.exceptions.auth_exceptions import InvalidPasswordException
 from src.core.exceptions.api_exceptions import (
     UserAlreadyExistsException,
 )
-from src.schemas.users import User
+from src.schemas.users import User as UserSchema
+
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register", response_model=User)
+@router.post("/register", response_model=UserSchema)
 async def register(login: str, password: str, db: AsyncSession = Depends(get_db)):
     try:
         use_case = RegisterUserUseCase()
         user = await use_case.execute(db, login, password)
-        return User.model_validate(user)
+        return UserSchema.model_validate(user)
     except UserLoginIsNotUniqueException:
         raise UserAlreadyExistsException(login=login)
 

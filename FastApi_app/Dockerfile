@@ -1,23 +1,20 @@
-FROM python:3.13-slim
+FROM python:3.13.13-alpine
+
+ENV PATH="${PATH}:/root/.local/bin"
+ENV PYTHONPATH /app/src
+
+COPY ./src /app/src
+COPY alembic /app/alembic
+COPY alembic.ini /app/
+COPY requirements.txt /app/
+COPY main.py /app/
 
 WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+RUN mkdir -p /app/media
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-RUN mkdir -p logs
-RUN chmod +x entrypoint.sh
+RUN pip install -r requirements.txt
 
 EXPOSE 8000
 
-ENTRYPOINT ["./entrypoint.sh"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
