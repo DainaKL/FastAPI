@@ -30,5 +30,3 @@ async def init_admin():
         except Exception as e:
             print(f"Ошибка: {e}")
             logger.error(f"Ошибка при создании админа: {e}")
-        finally:
-            break

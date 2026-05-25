@@ -7,19 +7,19 @@ class Settings(BaseSettings):
     APP_NAME: str = "FastAPI App"
     DEBUG: bool = True
 
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 5
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     SECRET_AUTH_KEY: SecretStr
     AUTH_ALGORITHM: str = "HS256"
 
-    POSTGRES_SCHEMA: str = "application"
-    POSTGRES_HOST: str = "postgres"
-    POSTGRES_DB: str = "postgres"
+    POSTGRES_HOST: str = "localhost"
+    POSTGRES_DB: str = "fastapi_db"
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
+    POSTGRES_SCHEMA: str = "application"
 
     PORT: int = 8000
-    ROOT_PATH: str = "/api/v1"
+    ROOT_PATH: str = ""
     ORIGINS: List[str] = []
 
     LOG_LEVEL: str = "INFO"
