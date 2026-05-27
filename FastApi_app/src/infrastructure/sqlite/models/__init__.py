@@ -1,8 +1,8 @@
-from src.infrastructure.sqlite.database import Base
-from .users import User
-from .post import Post
-from .comment import Comment
+from .user import User
 from .category import Category
 from .location import Location
+from .post import Post
+from .comment_image import CommentImage
+from .comment import Comment
 
-__all__ = ["Base", "User", "Post", "Comment", "Category", "Location"]
+__all__ = ["User", "Category", "Location", "Post", "CommentImage", "Comment"]

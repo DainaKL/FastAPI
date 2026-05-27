@@ -14,9 +14,7 @@ class CommentBase(BaseSchema):
         if len(v) < 1:
             raise ValueError("Текст комментария не может быть пустым")
         if len(v) > 2000:
-            raise ValueError(
-                "Текст комментария должен содержать максимум 2000 символов"
-            )
+            raise ValueError("Текст комментария должен содержать максимум 2000 символов")
         return v
 
 

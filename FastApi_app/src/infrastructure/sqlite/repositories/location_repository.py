@@ -1,18 +1,18 @@
-from typing import Optional, List
+from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.sqlite.models.location import Location as LocationModel
+from src.infrastructure.sqlite.models.location import Location
 from src.infrastructure.sqlite.repositories.base import BaseRepository
 
 
-class LocationRepository(BaseRepository[LocationModel]):
+class LocationRepository(BaseRepository[Location]):
     def __init__(self):
-        super().__init__(LocationModel)
+        super().__init__(Location)
 
     async def get_by_name(
         self, session: AsyncSession, name: str
-    ) -> Optional[LocationModel]:
+    ) -> Optional[Location]:
         if not name:
             return None
         stmt = select(self.model).where(self.model.name == name)
@@ -21,12 +21,7 @@ class LocationRepository(BaseRepository[LocationModel]):
 
     async def get_published(
         self, session: AsyncSession, skip: int = 0, limit: int = 100
-    ) -> List[LocationModel]:
-        stmt = (
-            select(self.model)
-            .where(self.model.is_published == True)
-            .offset(skip)
-            .limit(limit)
-        )
+    ):
+        stmt = select(self.model).where(self.model.is_published == True).offset(skip).limit(limit)
         result = await session.execute(stmt)
         return list(result.scalars().all())

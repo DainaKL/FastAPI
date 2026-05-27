@@ -303,3 +303,7 @@ class PostAuthRequiredException(ForbiddenException):
 class InvalidIDException(NotFoundException):
     def __init__(self, id_value: any):
         super().__init__(detail=f"Некорректный идентификатор '{id_value}'")
+
+class InvalidPasswordException(CredentialsException):
+    def __init__(self):
+        super().__init__(detail="Неверный пароль")

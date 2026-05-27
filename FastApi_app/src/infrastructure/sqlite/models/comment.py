@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from src.infrastructure.sqlite.database import Base
@@ -21,5 +21,7 @@ class Comment(Base):
         Integer, ForeignKey("blog_post.id", ondelete="CASCADE")
     )
     author_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("auth_user.id", ondelete="CASCADE")
+        Integer, ForeignKey("users.id", ondelete="CASCADE")
     )
+    
+    images = relationship("CommentImage", back_populates="comment", cascade="all, delete-orphan")

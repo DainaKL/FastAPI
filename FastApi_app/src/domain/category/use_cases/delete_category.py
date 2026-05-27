@@ -1,10 +1,7 @@
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.sqlite.repositories.category_repository import (
-    CategoryRepository,
-)
-from src.core.exceptions.database_exceptions import DatabaseOperationException
-from src.core.exceptions.domain_exceptions import CategoryNotFoundException
+from src.infrastructure.sqlite.repositories.category_repository import CategoryRepository
+from src.core.exceptions.api_exceptions import CategoryNotFoundException
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +15,5 @@ class DeleteCategoryUseCase:
         if not category:
             raise CategoryNotFoundException(category_id=category_id)
 
-        try:
-            await self._repo.delete(db, category_id)
-            await db.flush()
-        except Exception as e:
-            raise DatabaseOperationException("delete", str(e))
+        await self._repo.delete(db, category_id)
+        await db.flush()

@@ -5,8 +5,13 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 
-from src.core.database import Base
+from src.infrastructure.sqlite.database import Base
 from src.core.config import settings
+from src.infrastructure.sqlite.models.category import Category
+from src.infrastructure.sqlite.models.comment import Comment
+from src.infrastructure.sqlite.models.location import Location
+from src.infrastructure.sqlite.models.post import Post
+from src.infrastructure.sqlite.models.user import User
 
 config = context.config
 

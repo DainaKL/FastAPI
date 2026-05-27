@@ -37,6 +37,7 @@ async def update_current_user(
 ):
     try:
         updated_user = await use_cases.update(db, current_user.id, user_data)
+        await db.commit()
         raise ProfileUpdatedSuccessfullyException(
             user_id=updated_user.id, login=updated_user.login
         )
@@ -52,6 +53,7 @@ async def delete_current_user(
 ):
     try:
         await use_cases.delete(db, current_user.id)
+        await db.commit()
         raise UserDeletedSuccessfullyException(
             user_id=current_user.id, login=current_user.login
         )
@@ -97,6 +99,7 @@ async def make_user_admin(
         if not user:
             raise UserNotFoundException(user_id=user_id)
         updated_user = await use_cases.update(db, user_id, UserUpdate(is_admin=True))
+        await db.commit()
         return updated_user
     except Exception as e:
         raise UserNotFoundException(user_id=user_id)
@@ -113,6 +116,7 @@ async def update_user_by_admin(
     validate_id(user_id)
     try:
         updated_user = await use_cases.update(db, user_id, user_data)
+        await db.commit()
         raise ProfileUpdatedSuccessfullyException(
             user_id=updated_user.id, login=updated_user.login
         )
@@ -131,6 +135,7 @@ async def delete_user_by_admin(
     try:
         user = await use_cases.get_by_id(db, user_id)
         await use_cases.delete(db, user_id)
+        await db.commit()
         raise UserDeletedSuccessfullyException(user_id=user_id, login=user.login)
     except Exception as e:
         raise UserNotFoundException(user_id=user_id)

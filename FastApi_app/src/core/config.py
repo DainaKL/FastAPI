@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     SECRET_AUTH_KEY: SecretStr
     AUTH_ALGORITHM: str = "HS256"
 
-    POSTGRES_HOST: str = "localhost"
+    POSTGRES_HOST: str = "postgres"
     POSTGRES_DB: str = "fastapi_db"
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str = "postgres"

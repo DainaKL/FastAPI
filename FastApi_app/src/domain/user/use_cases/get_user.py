@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.sqlite.repositories.user_repository import UserRepository
 from src.schemas.users import User as UserSchema
-from src.core.exceptions.domain_exceptions import UserNotFoundByIdException
+from src.core.exceptions.api_exceptions import UserNotFoundException
 
 
 class GetUserUseCase:
@@ -11,5 +11,5 @@ class GetUserUseCase:
     async def execute(self, db: AsyncSession, user_id: int) -> UserSchema:
         user = await self._repo.get_by_id(db, user_id)
         if not user:
-            raise UserNotFoundByIdException(user_id)
+            raise UserNotFoundException(user_id=user_id)
         return UserSchema.model_validate(user)

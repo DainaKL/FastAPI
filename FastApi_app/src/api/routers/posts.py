@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, status, UploadFile, File
+from fastapi import APIRouter, Depends, status, UploadFile, File, HTTPException
 from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,6 +25,8 @@ from src.core.exceptions.api_exceptions import (
     PostAuthRequiredException,
     InvalidIDException,
 )
+from src.core.exceptions.domain_exceptions import CategoryNotFoundException, LocationNotFoundException, UserNotFoundByIdException
+from src.infrastructure.sqlite.repositories.post_repository import PostRepository
 
 router = APIRouter(prefix="/base", tags=["Base APIs"])
 
@@ -66,7 +68,12 @@ async def create_post(
     db: AsyncSession = Depends(get_db),
 ):
     post_data.author_id = current_user.id
-    return await use_case.execute(db, post_data)
+    try:
+        result = await use_case.execute(db, post_data)
+        await db.commit()
+        return result
+    except (CategoryNotFoundException, LocationNotFoundException, UserNotFoundByIdException) as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.put("/posts/{id}", response_model=Post)
@@ -78,10 +85,15 @@ async def update_post(
     db: AsyncSession = Depends(get_db),
 ):
     validate_id(id)
-    post = await use_case.get_by_id(db, id)
+    repo = PostRepository()
+    post = await repo.get_by_id(db, id)
+    if not post:
+        raise NotFoundException(detail=f"Post {id} not found")
     if not current_user.is_admin and post.author_id != current_user.id:
         raise PostForbiddenException(action="редактировать")
-    return await use_case.execute(db, id, post_data)
+    result = await use_case.execute(db, id, post_data)
+    await db.commit()
+    return result
 
 
 @router.delete("/posts/{id}")
@@ -92,8 +104,6 @@ async def delete_post(
     db: AsyncSession = Depends(get_db),
 ):
     validate_id(id)
-
-    from src.infrastructure.sqlite.repositories.post_repository import PostRepository
     repo = PostRepository()
     post = await repo.get_by_id(db, id)
     
@@ -104,22 +114,24 @@ async def delete_post(
         raise PostForbiddenException(action="удалять")
     
     await use_case.execute(db, id)
+    await db.commit()
     return {"status": "success", "message": f"Post {id} deleted"}
 
-@router.post("/posts/{id}/image", response_model=Post)
+
+@router.post("/posts/{post_id}/image", response_model=Post)
 async def upload_post_image(
-    id: int,
+    post_id: int,
     image: UploadFile = File(...),
     get_post_use_case: GetPostUseCase = Depends(get_get_post_use_case),
     update_use_case: UpdatePostUseCase = Depends(get_update_post_use_case),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    validate_id(id)
+    validate_id(post_id)
     if not current_user:
         raise PostAuthRequiredException()
 
-    post = await get_post_use_case.execute(db, id)
+    post = await get_post_use_case.execute(db, post_id)
     if not current_user.is_admin and post.author_id != current_user.id:
         raise PostForbiddenException(action="редактировать")
 
@@ -127,7 +139,7 @@ async def upload_post_image(
     media_dir.mkdir(parents=True, exist_ok=True)
 
     file_extension = Path(image.filename).suffix
-    file_name = f"{id}_{datetime.now().timestamp()}{file_extension}"
+    file_name = f"{post_id}_{datetime.now().timestamp()}{file_extension}"
     file_path = media_dir / file_name
 
     with open(file_path, "wb") as buffer:
@@ -135,4 +147,6 @@ async def upload_post_image(
         buffer.write(content)
 
     image_url = f"/media/post_images/{file_name}"
-    return await update_use_case.execute(db, id, PostUpdate(image=image_url))
+    result = await update_use_case.execute(db, post_id, PostUpdate(image=image_url))
+    await db.commit()
+    return result

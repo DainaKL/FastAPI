@@ -5,50 +5,40 @@ from src.core.database import get_db
 from src.domain.auth.use_cases.authenticate_user import AuthenticateUserUseCase
 from src.domain.auth.use_cases.register_user import RegisterUserUseCase
 from src.domain.auth.use_cases.create_access_token import CreateAccessTokenUseCase
-from src.core.exceptions.domain_exceptions import (
-    UserNotFoundByLoginException,
-    UserLoginIsNotUniqueException,
-)
-from src.core.exceptions.auth_exceptions import InvalidPasswordException
-from src.core.exceptions.api_exceptions import (
-    UserAlreadyExistsException,
-)
-from src.schemas.users import User as UserSchema
+from src.schemas.users import UserCreate, User as UserSchema
+from src.core.exceptions.api_exceptions import UserAlreadyExistsException, UserNotFoundException, InvalidPasswordException
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/register", response_model=UserSchema)
-async def register(login: str, password: str, db: AsyncSession = Depends(get_db)):
+async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     try:
         use_case = RegisterUserUseCase()
-        user = await use_case.execute(db, login, password)
+        user = await use_case.execute(db, user_data.login, user_data.password)
+        await db.commit()
         return UserSchema.model_validate(user)
-    except UserLoginIsNotUniqueException:
-        raise UserAlreadyExistsException(login=login)
+    except UserAlreadyExistsException as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/token")
 async def token(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
+    form_data: OAuth2PasswordRequestForm = Depends(), 
+    db: AsyncSession = Depends(get_db)
 ):
-    try:
-        auth_use_case = AuthenticateUserUseCase()
-        user = await auth_use_case.execute(db, form_data.username, form_data.password)
+    use_case = AuthenticateUserUseCase()
+    user = await use_case.execute(db, form_data.username, form_data.password)
 
-        token_use_case = CreateAccessTokenUseCase()
-        access_token = token_use_case.execute(
-            user_id=user.id, login=user.login, is_admin=user.is_admin
-        )
+    token_use_case = CreateAccessTokenUseCase()
+    access_token = token_use_case.execute(
+        user_id=user.id, login=user.login, is_admin=user.is_admin
+    )
 
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-        }
-    except (UserNotFoundByLoginException, InvalidPasswordException):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+    }

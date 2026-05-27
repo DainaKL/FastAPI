@@ -24,7 +24,7 @@ services:
     volumes:
       - ./media:/app/media
       - ./alembic:/app/alembic
-      - ./start.sh:/app/.
+      - ./start.sh:/app/start.sh
     depends_on:
       postgres:
         condition: service_healthy

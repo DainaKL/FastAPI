@@ -13,7 +13,7 @@ class Post(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String(256))
     text: Mapped[str] = mapped_column(Text)
-    pub_date: Mapped[datetime] = mapped_column(DateTime)
+    pub_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     is_published: Mapped[bool] = mapped_column(Boolean, default=True)
     image: Mapped[str] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -21,7 +21,7 @@ class Post(Base):
     )
 
     author_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("auth_user.id", ondelete="CASCADE")
+        Integer, ForeignKey("users.id", ondelete="CASCADE")
     )
     location_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("blog_location.id", ondelete="SET NULL"), nullable=True

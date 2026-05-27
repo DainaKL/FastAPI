@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from src.core.database import get_async_session
 from src.core.security import get_password_hash
-from src.infrastructure.sqlite.models.users import User
+from src.infrastructure.sqlite.models.user import User  
 from src.core.logger import logger
 
 
@@ -30,3 +30,4 @@ async def init_admin():
         except Exception as e:
             print(f"Ошибка: {e}")
             logger.error(f"Ошибка при создании админа: {e}")
+            await session.rollback()

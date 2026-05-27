@@ -1,5 +1,5 @@
 from typing import Generic, List, Type, TypeVar
-from sqlalchemy import select, update, delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.sqlite.database import Base
@@ -25,7 +25,6 @@ class BaseRepository(Generic[ModelType]):
         obj = self.model(**kwargs)
         session.add(obj)
         await session.flush()
-        await session.refresh(obj)
         return obj
 
     async def update(
@@ -37,7 +36,6 @@ class BaseRepository(Generic[ModelType]):
                 if hasattr(obj, key):
                     setattr(obj, key, value)
             await session.flush()
-            await session.refresh(obj)
         return obj
 
     async def delete(self, session: AsyncSession, id: int) -> bool:

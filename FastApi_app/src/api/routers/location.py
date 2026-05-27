@@ -8,7 +8,6 @@ from src.schemas.location import Location, LocationCreate, LocationUpdate
 from src.schemas.users import User
 from src.core.exceptions.api_exceptions import (
     NotFoundException,
-    ConflictException,
     LocationForbiddenException,
     InvalidIDException,
 )
@@ -76,7 +75,9 @@ async def create_location(
 ):
     if not current_user.is_admin:
         raise LocationForbiddenException(action="создавать")
-    return await use_cases.create(db, location_data)
+    result = await use_cases.create(db, location_data)
+    await db.commit()
+    return result
 
 
 @router.put("/{location_id}", response_model=Location)
@@ -91,7 +92,9 @@ async def update_location(
     if not current_user.is_admin:
         raise LocationForbiddenException(action="редактировать")
     try:
-        return await use_cases.update(db, location_id, location_data)
+        result = await use_cases.update(db, location_id, location_data)
+        await db.commit()
+        return result
     except Exception as e:
         raise NotFoundException(detail=str(e))
 
@@ -107,4 +110,5 @@ async def delete_location(
     if not current_user.is_admin:
         raise LocationForbiddenException(action="удалять")
     await use_cases.delete(db, location_id)
+    await db.commit()
     return {"status": "success", "message": f"Location {location_id} deleted"}

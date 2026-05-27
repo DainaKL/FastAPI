@@ -1,10 +1,7 @@
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.sqlite.repositories.location_repository import (
-    LocationRepository,
-)
-from src.core.exceptions.database_exceptions import DatabaseOperationException
-from src.core.exceptions.domain_exceptions import LocationNotFoundException
+from src.infrastructure.sqlite.repositories.location_repository import LocationRepository
+from src.core.exceptions.api_exceptions import LocationNotFoundException
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +15,5 @@ class DeleteLocationUseCase:
         if not location:
             raise LocationNotFoundException(location_id=location_id)
 
-        try:
-            await self._repo.delete(db, location_id)
-            await db.flush()
-        except Exception as e:
-            raise DatabaseOperationException("delete", str(e))
+        await self._repo.delete(db, location_id)
+        await db.flush()
