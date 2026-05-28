@@ -16,3 +16,5 @@ COPY . .
 EXPOSE 8000
 
 CMD ["sh", "./start.sh"]
+
+RUN mkdir -p /app/logs && chmod 777 /app/logs

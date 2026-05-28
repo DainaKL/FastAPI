@@ -1,6 +1,6 @@
-from typing import Generic, List, Type, TypeVar
-from sqlalchemy import select
+from typing import Any, Dict, Generic, List, Optional, TypeVar
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from src.infrastructure.sqlite.database import Base
 
@@ -8,40 +8,41 @@ ModelType = TypeVar("ModelType", bound=Base)
 
 
 class BaseRepository(Generic[ModelType]):
-    def __init__(self, model: Type[ModelType]):
+    def __init__(self, model: Any, session: AsyncSession):
         self.model = model
+        self.session = session
 
-    async def get_by_id(self, session: AsyncSession, id: int) -> ModelType | None:
-        return await session.get(self.model, id)
+    async def get_by_id(self, id: int) -> Optional[ModelType]:
+        result = await self.session.execute(
+            select(self.model).where(self.model.id == id)
+        )
+        return result.scalar_one_or_none()
 
-    async def get_all(
-        self, session: AsyncSession, skip: int = 0, limit: int = 100
-    ) -> List[ModelType]:
-        stmt = select(self.model).offset(skip).limit(limit)
-        result = await session.execute(stmt)
+    async def get_all(self, skip: int = 0, limit: int = 100) -> List[ModelType]:
+        result = await self.session.execute(
+            select(self.model).offset(skip).limit(limit)
+        )
         return list(result.scalars().all())
 
-    async def create(self, session: AsyncSession, **kwargs) -> ModelType:
+    async def create(self, **kwargs) -> ModelType:
         obj = self.model(**kwargs)
-        session.add(obj)
-        await session.flush()
+        self.session.add(obj)
+        await self.session.flush()
         return obj
 
-    async def update(
-        self, session: AsyncSession, id: int, **kwargs
-    ) -> ModelType | None:
-        obj = await self.get_by_id(session, id)
+    async def update(self, id: int, **kwargs) -> Optional[ModelType]:
+        obj = await self.get_by_id(id)
         if obj:
             for key, value in kwargs.items():
-                if hasattr(obj, key):
+                if value is not None:
                     setattr(obj, key, value)
-            await session.flush()
+            await self.session.flush()
         return obj
 
-    async def delete(self, session: AsyncSession, id: int) -> bool:
-        obj = await self.get_by_id(session, id)
+    async def delete(self, id: int) -> bool:
+        obj = await self.get_by_id(id)
         if obj:
-            await session.delete(obj)
-            await session.flush()
+            await self.session.delete(obj)
+            await self.session.flush()
             return True
         return False

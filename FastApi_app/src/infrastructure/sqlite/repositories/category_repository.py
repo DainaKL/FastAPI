@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,21 +7,26 @@ from src.infrastructure.sqlite.repositories.base import BaseRepository
 
 
 class CategoryRepository(BaseRepository[Category]):
-    def __init__(self):
-        super().__init__(Category)
+    def __init__(self, session: AsyncSession):
+        super().__init__(Category, session)
 
-    async def get_by_slug(
-        self, session: AsyncSession, slug: str
-    ) -> Optional[Category]:
-        if not slug:
-            return None
-        stmt = select(self.model).where(self.model.slug == slug)
-        result = await session.execute(stmt)
+    async def get_all(self, skip: int = 0, limit: int = 100) -> List[Category]:
+        return await super().get_all(skip, limit)
+
+    async def get_by_id(self, category_id: int) -> Optional[Category]:
+        return await super().get_by_id(category_id)
+
+    async def get_by_slug(self, slug: str) -> Optional[Category]:
+        result = await self.session.execute(
+            select(self.model).where(self.model.slug == slug)
+        )
         return result.scalar_one_or_none()
 
-    async def get_published(
-        self, session: AsyncSession, skip: int = 0, limit: int = 100
-    ):
-        stmt = select(self.model).where(self.model.is_published == True).offset(skip).limit(limit)
-        result = await session.execute(stmt)
-        return list(result.scalars().all())
+    async def create_category(self, **kwargs) -> Category:
+        return await self.create(**kwargs)
+
+    async def update_category(self, category_id: int, **kwargs) -> Optional[Category]:
+        return await self.update(category_id, **kwargs)
+
+    async def delete_category(self, category_id: int) -> bool:
+        return await self.delete(category_id)

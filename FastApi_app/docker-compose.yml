@@ -25,6 +25,7 @@ services:
       - ./media:/app/media
       - ./alembic:/app/alembic
       - ./start.sh:/app/start.sh
+      - ./logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy

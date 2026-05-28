@@ -304,6 +304,33 @@ class InvalidIDException(NotFoundException):
     def __init__(self, id_value: any):
         super().__init__(detail=f"Некорректный идентификатор '{id_value}'")
 
+
 class InvalidPasswordException(CredentialsException):
     def __init__(self):
         super().__init__(detail="Неверный пароль")
+
+
+class BadRequestException(HTTPException):
+    def __init__(self, detail: str = "Некорректный запрос"):
+        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+
+class InvalidIDException(BadRequestException):
+    def __init__(self, id_value):
+        super().__init__(
+            detail=f"Некорректный идентификатор '{id_value}'. ID должен быть положительным числом."
+        )
+
+
+class InvalidLimitException(BadRequestException):
+    def __init__(self, limit: int):
+        super().__init__(
+            detail=f"Некорректное значение limit '{limit}'. Допустимые значения: 1-100."
+        )
+
+
+class InvalidSkipException(BadRequestException):
+    def __init__(self, skip: int):
+        super().__init__(
+            detail=f"Некорректное значение skip '{skip}'. Skip не может быть отрицательным."
+        )

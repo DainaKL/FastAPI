@@ -1,9 +1,7 @@
-from typing import List
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.core.database import get_db
-from src.dependencies.auth import get_current_user
+from src.dependencies.auth import get_current_user, get_current_admin_user
 from src.schemas.location import Location, LocationCreate, LocationUpdate
 from src.schemas.users import User
 from src.domain.location.use_cases.get_locations import GetLocationsUseCase
@@ -19,7 +17,7 @@ from src.domain.location.use_cases.delete_location import DeleteLocationUseCase
 router = APIRouter(prefix="/locations", tags=["Locations"])
 
 
-@router.get("/", response_model=List[Location])
+@router.get("/", response_model=list[Location])
 async def get_locations(
     skip: int = 0,
     limit: int = 100,
@@ -29,7 +27,7 @@ async def get_locations(
     return await use_case.execute(db, skip=skip, limit=limit)
 
 
-@router.get("/published", response_model=List[Location])
+@router.get("/published", response_model=list[Location])
 async def get_published_locations(
     skip: int = 0,
     limit: int = 100,
@@ -64,10 +62,9 @@ async def create_location(
     current_user: User = Depends(get_current_user),
 ):
     use_case = CreateLocationUseCase()
-    try:
-        return await use_case.execute(db, location_data, current_user.id)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    result = await use_case.execute(db, location_data, current_user.id)
+    await db.commit()
+    return result
 
 
 @router.put("/{location_id}", response_model=Location)
@@ -78,9 +75,11 @@ async def update_location(
     current_user: User = Depends(get_current_user),
 ):
     use_case = UpdateLocationUseCase()
-    return await use_case.execute(
+    result = await use_case.execute(
         db, location_id, location_data, current_user.id, current_user.is_admin
     )
+    await db.commit()
+    return result
 
 
 @router.delete("/{location_id}")
@@ -91,4 +90,5 @@ async def delete_location(
 ):
     use_case = DeleteLocationUseCase()
     await use_case.execute(db, location_id, current_user.id, current_user.is_admin)
+    await db.commit()
     return {"status": "success", "message": f"Location {location_id} deleted"}

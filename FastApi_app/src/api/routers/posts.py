@@ -1,152 +1,131 @@
-from datetime import datetime
-from fastapi import APIRouter, Depends, status, UploadFile, File, HTTPException
-from pathlib import Path
+from typing import List, Optional
+from fastapi import APIRouter, Depends, status, UploadFile, File, Form, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import get_db
-from src.api.depends import (
-    get_get_posts_use_case,
-    get_get_post_use_case,
-    get_create_post_use_case,
-    get_update_post_use_case,
-    get_delete_post_use_case,
-)
 from src.dependencies.auth import get_current_user
-from src.domain.post.use_cases.get_posts import GetPostsUseCase
-from src.domain.post.use_cases.get_post import GetPostUseCase
-from src.domain.post.use_cases.create_post import CreatePostUseCase
-from src.domain.post.use_cases.update_post import UpdatePostUseCase
-from src.domain.post.use_cases.delete_post import DeletePostUseCase
 from src.schemas.posts import Post, PostCreate, PostUpdate
 from src.schemas.users import User
-from src.core.exceptions.api_exceptions import (
-    NotFoundException,
-    PostForbiddenException,
-    PostAuthRequiredException,
-    InvalidIDException,
-)
-from src.core.exceptions.domain_exceptions import CategoryNotFoundException, LocationNotFoundException, UserNotFoundByIdException
-from src.infrastructure.sqlite.repositories.post_repository import PostRepository
+from src.domain.post.use_cases.create_post import CreatePostUseCase
+from src.domain.post.use_cases.get_posts import GetPostsUseCase
+from src.domain.post.use_cases.get_post import GetPostUseCase
+from src.domain.post.use_cases.update_post import UpdatePostUseCase
+from src.domain.post.use_cases.delete_post import DeletePostUseCase
+from src.services.media_uploader import save_file
 
-router = APIRouter(prefix="/base", tags=["Base APIs"])
+router = APIRouter(prefix="/posts", tags=["Posts"])
 
 
-def validate_id(id: int) -> int:
-    if id <= 0:
-        raise InvalidIDException(id)
-    return id
-
-
-@router.get("/posts", response_model=list[Post])
+@router.get("/", response_model=List[Post])
 async def get_posts(
     skip: int = 0,
     limit: int = 100,
-    use_case: GetPostsUseCase = Depends(get_get_posts_use_case),
     db: AsyncSession = Depends(get_db),
 ):
+    use_case = GetPostsUseCase()
     return await use_case.execute(db, skip=skip, limit=limit)
 
 
-@router.get("/posts/{id}", response_model=Post)
+@router.get("/{id}", response_model=Post)
 async def get_post(
     id: int,
-    use_case: GetPostUseCase = Depends(get_get_post_use_case),
     db: AsyncSession = Depends(get_db),
 ):
-    validate_id(id)
-    try:
-        return await use_case.execute(db, id)
-    except Exception as e:
-        raise NotFoundException(detail=str(e))
+    use_case = GetPostUseCase()
+    return await use_case.execute(db, id)
 
 
-@router.post("/posts", status_code=status.HTTP_201_CREATED, response_model=Post)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=Post)
 async def create_post(
-    post_data: PostCreate,
-    use_case: CreatePostUseCase = Depends(get_create_post_use_case),
-    current_user: User = Depends(get_current_user),
+    title: str = Form(...),
+    text: str = Form(...),
+    is_published: bool = Form(True),
+    location_id: Optional[int] = Form(None),
+    category_id: Optional[int] = Form(None),
+    images: List[UploadFile] = File([]),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    post_data.author_id = current_user.id
-    try:
-        result = await use_case.execute(db, post_data)
-        await db.commit()
-        return result
-    except (CategoryNotFoundException, LocationNotFoundException, UserNotFoundByIdException) as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    post_data = PostCreate(
+        title=title,
+        text=text,
+        is_published=is_published,
+        location_id=location_id if location_id and location_id > 0 else None,
+        category_id=category_id if category_id and category_id > 0 else None,
+    )
+
+    use_case = CreatePostUseCase()
+    result = await use_case.execute(db, post_data, current_user.id, images)
+    await db.commit()
+    return result
 
 
-@router.put("/posts/{id}", response_model=Post)
+@router.put("/{id}", response_model=Post)
 async def update_post(
     id: int,
     post_data: PostUpdate,
-    use_case: UpdatePostUseCase = Depends(get_update_post_use_case),
-    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    validate_id(id)
-    repo = PostRepository()
-    post = await repo.get_by_id(db, id)
-    if not post:
-        raise NotFoundException(detail=f"Post {id} not found")
-    if not current_user.is_admin and post.author_id != current_user.id:
-        raise PostForbiddenException(action="редактировать")
-    result = await use_case.execute(db, id, post_data)
-    await db.commit()
-    return result
+    use_case = UpdatePostUseCase()
+    return await use_case.execute(
+        db, id, post_data, current_user.id, current_user.is_admin
+    )
 
 
-@router.delete("/posts/{id}")
+@router.delete("/{id}")
 async def delete_post(
     id: int,
-    use_case: DeletePostUseCase = Depends(get_delete_post_use_case),
-    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    validate_id(id)
-    repo = PostRepository()
-    post = await repo.get_by_id(db, id)
-    
-    if not post:
-        raise NotFoundException(detail=f"Post {id} not found")
-    
-    if not current_user.is_admin and post.author_id != current_user.id:
-        raise PostForbiddenException(action="удалять")
-    
-    await use_case.execute(db, id)
-    await db.commit()
+    use_case = DeletePostUseCase()
+    await use_case.execute(db, id, current_user.id, current_user.is_admin)
     return {"status": "success", "message": f"Post {id} deleted"}
 
 
-@router.post("/posts/{post_id}/image", response_model=Post)
-async def upload_post_image(
+@router.post("/{post_id}/images/")
+async def add_post_image(
     post_id: int,
-    image: UploadFile = File(...),
-    get_post_use_case: GetPostUseCase = Depends(get_get_post_use_case),
-    update_use_case: UpdatePostUseCase = Depends(get_update_post_use_case),
-    current_user: User = Depends(get_current_user),
+    file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    validate_id(post_id)
-    if not current_user:
-        raise PostAuthRequiredException()
+    from src.infrastructure.sqlite.repositories.post_repository import PostRepository
 
-    post = await get_post_use_case.execute(db, post_id)
-    if not current_user.is_admin and post.author_id != current_user.id:
-        raise PostForbiddenException(action="редактировать")
+    repo = PostRepository(db)
+    post = await repo.get_by_id(post_id)
+    if post.author_id != current_user.id:
+        raise HTTPException(
+            status_code=403, detail="Вы не можете добавить картинку к чужому посту"
+        )
 
-    media_dir = Path("media/post_images")
-    media_dir.mkdir(parents=True, exist_ok=True)
-
-    file_extension = Path(image.filename).suffix
-    file_name = f"{post_id}_{datetime.now().timestamp()}{file_extension}"
-    file_path = media_dir / file_name
-
-    with open(file_path, "wb") as buffer:
-        content = await image.read()
-        buffer.write(content)
-
-    image_url = f"/media/post_images/{file_name}"
-    result = await update_use_case.execute(db, post_id, PostUpdate(image=image_url))
+    url = await save_file(file)
+    await repo.add_image(post_id, url)
     await db.commit()
-    return result
+    return {"message": "Image added", "url": url, "post_id": post_id}
+
+
+@router.delete("/{post_id}/images/{image_id}")
+async def delete_post_image(
+    post_id: int,
+    image_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from src.infrastructure.sqlite.repositories.post_repository import PostRepository
+
+    repo = PostRepository(db)
+    post = await repo.get_by_id(post_id)
+    if post.author_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(
+            status_code=403, detail="Вы не можете удалять картинки из чужого поста"
+        )
+
+    image = await repo.get_image_by_id(image_id)
+    if not image or image.post_id != post_id:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    await repo.delete_image(image_id)
+    await db.commit()
+    return {"message": "Image deleted", "image_id": image_id}

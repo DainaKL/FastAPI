@@ -1,18 +1,28 @@
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.sqlite.repositories.location_repository import LocationRepository
+from sqlalchemy import select
+from src.infrastructure.sqlite.repositories.location_repository import (
+    LocationRepository,
+)
 from src.schemas.location import Location as LocationSchema
-from src.core.exceptions.api_exceptions import LocationNotFoundException
+from src.core.exceptions.api_exceptions import (
+    LocationNotFoundException,
+    InvalidIDException,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class GetLocationUseCase:
-    def __init__(self) -> None:
-        self._repo = LocationRepository()
-
     async def execute(self, db: AsyncSession, location_id: int) -> LocationSchema:
-        location = await self._repo.get_by_id(db, location_id)
+        if location_id <= 0:
+            raise InvalidIDException(location_id)
+
+        repo = LocationRepository(db)
+        stmt = select(repo.model).where(repo.model.id == location_id)
+        result = await db.execute(stmt)
+        location = result.scalar_one_or_none()
+
         if not location:
             raise LocationNotFoundException(location_id=location_id)
         return LocationSchema.model_validate(location)

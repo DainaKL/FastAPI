@@ -43,11 +43,13 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    engine = create_async_engine(settings.DATABASE_SYNC_URL.replace("postgresql://", "postgresql+asyncpg://"))
-    
+    engine = create_async_engine(
+        settings.DATABASE_SYNC_URL.replace("postgresql://", "postgresql+asyncpg://")
+    )
+
     async with engine.connect() as connection:
         await connection.run_sync(do_run_migrations)
-    
+
     await engine.dispose()
 
 

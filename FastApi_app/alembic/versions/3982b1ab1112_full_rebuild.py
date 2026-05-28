@@ -1,8 +1,8 @@
-"""add comment_image table
+"""full rebuild
 
-Revision ID: 9f1ddd398b7e
-Revises: e2213cb00b45
-Create Date: 2026-05-27 08:00:21.452358
+Revision ID: 3982b1ab1112
+Revises: 055a6989ad7b
+Create Date: 2026-05-27 22:40:37.153145
 
 """
 
@@ -13,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "9f1ddd398b7e"
-down_revision: Union[str, Sequence[str], None] = "e2213cb00b45"
+revision: str = "3982b1ab1112"
+down_revision: Union[str, Sequence[str], None] = "055a6989ad7b"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

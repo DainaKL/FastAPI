@@ -4,13 +4,13 @@ from sqlalchemy.orm import relationship
 from src.infrastructure.sqlite.database import Base
 
 
-class CommentImage(Base):
-    __tablename__ = "comment_image"
+class PostImage(Base):
+    __tablename__ = "blog_post_image"
 
     id = Column(Integer, primary_key=True, index=True)
     url = Column(String, nullable=False)
-    comment_id = Column(
-        Integer, ForeignKey("blog_comment.id", ondelete="CASCADE"), nullable=False
+    post_id = Column(
+        Integer, ForeignKey("blog_post.id", ondelete="CASCADE"), nullable=False
     )
 
-    comment = relationship("Comment", back_populates="images")
+    post = relationship("Post", back_populates="images")

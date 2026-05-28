@@ -2,22 +2,38 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.sqlite.repositories.comment_repository import CommentRepository
 from src.schemas.comments import Comment as CommentSchema, CommentUpdate
-from src.core.exceptions.api_exceptions import CommentNotFoundException
+from src.core.exceptions.api_exceptions import (
+    CommentNotFoundException,
+    CommentForbiddenException,
+    InvalidIDException,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class UpdateCommentUseCase:
-    def __init__(self, repo: CommentRepository):
-        self._repo = repo
+    async def execute(
+        self,
+        db: AsyncSession,
+        comment_id: int,
+        data: CommentUpdate,
+        current_user_id: int,
+        is_admin: bool,
+    ):
+        if comment_id <= 0:
+            raise InvalidIDException(comment_id)
 
-    async def execute(self, db: AsyncSession, comment_id: int, data: dict) -> CommentSchema:
-        comment = await self._repo.get_by_id(db, comment_id)
+        repo = CommentRepository(db)
+        comment = await repo.get_by_id(comment_id)
         if not comment:
             raise CommentNotFoundException(comment_id=comment_id)
 
-        if data:
-            updated = await self._repo.update(db, comment_id, **data)
-            await db.flush()
-            return CommentSchema.model_validate(updated)
+        if not is_admin and comment.author_id != current_user_id:
+            raise CommentForbiddenException(action="редактировать")
+
+        update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
+        if update_dict:
+            await repo.update(comment_id, **update_dict)
+            await db.commit()
+
         return CommentSchema.model_validate(comment)

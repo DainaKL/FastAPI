@@ -31,8 +31,8 @@ async def get_current_user(
     if not user_id or not login:
         raise InvalidTokenException()
 
-    user_repo = UserRepository()
-    user = await user_repo.get_by_id(db, int(user_id))
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_id(int(user_id))
 
     if not user:
         raise UserNotFoundException(user_id=user_id)

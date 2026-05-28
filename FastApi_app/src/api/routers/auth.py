@@ -6,7 +6,11 @@ from src.domain.auth.use_cases.authenticate_user import AuthenticateUserUseCase
 from src.domain.auth.use_cases.register_user import RegisterUserUseCase
 from src.domain.auth.use_cases.create_access_token import CreateAccessTokenUseCase
 from src.schemas.users import UserCreate, User as UserSchema
-from src.core.exceptions.api_exceptions import UserAlreadyExistsException, UserNotFoundException, InvalidPasswordException
+from src.core.exceptions.api_exceptions import (
+    UserAlreadyExistsException,
+    UserNotFoundException,
+    InvalidPasswordException,
+)
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -27,18 +31,31 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
 
 @router.post("/token")
 async def token(
-    form_data: OAuth2PasswordRequestForm = Depends(), 
-    db: AsyncSession = Depends(get_db)
+    form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)
 ):
-    use_case = AuthenticateUserUseCase()
-    user = await use_case.execute(db, form_data.username, form_data.password)
+    try:
+        use_case = AuthenticateUserUseCase()
+        user = await use_case.execute(db, form_data.username, form_data.password)
 
-    token_use_case = CreateAccessTokenUseCase()
-    access_token = token_use_case.execute(
-        user_id=user.id, login=user.login, is_admin=user.is_admin
-    )
+        token_use_case = CreateAccessTokenUseCase()
+        access_token = token_use_case.execute(
+            user_id=user.id, login=user.login, is_admin=user.is_admin
+        )
 
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-    }
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+        }
+    except UserNotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Пользователь с таким логином не найден",
+        )
+    except InvalidPasswordException as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный пароль"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Ошибка авторизации"
+        )

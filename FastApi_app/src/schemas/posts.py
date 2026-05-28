@@ -1,15 +1,19 @@
 from datetime import datetime
-from pydantic import field_validator
+from typing import List, Optional
+from pydantic import field_validator, ConfigDict
 
 from src.schemas.base import BaseSchema
+from src.schemas.category import Category
+from src.schemas.location import Location
+from src.schemas.users import User
+from src.schemas.post_image import PostImage
 
 
 class PostBase(BaseSchema):
     title: str
     text: str
-    pub_date: datetime
+    pub_date: Optional[datetime] = None
     is_published: bool = True
-    image: str | None = None
 
     @field_validator("title")
     @classmethod
@@ -33,10 +37,8 @@ class PostBase(BaseSchema):
 class PostCreate(BaseSchema):
     title: str
     text: str
-    pub_date: datetime
+    pub_date: Optional[datetime] = None
     is_published: bool = True
-    image: str | None = None
-    author_id: int
     location_id: int | None = None
     category_id: int | None = None
 
@@ -48,12 +50,14 @@ class PostUpdate(BaseSchema):
     is_published: bool | None = None
     location_id: int | None = None
     category_id: int | None = None
-    image: str | None = None
 
 
 class Post(PostBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
-    author_id: int
-    location_id: int | None = None
-    category_id: int | None = None
+    author: User
+    location: Optional[Location] = None
+    category: Optional[Category] = None
     created_at: datetime
+    images: List[PostImage] = []

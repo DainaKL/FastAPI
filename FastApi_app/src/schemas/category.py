@@ -49,4 +49,8 @@ class CategoryUpdate(BaseSchema):
 
 class Category(CategoryBase):
     id: int
+    author_id: int
     created_at: datetime
+
+    class Config:
+        from_attributes = True

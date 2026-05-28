@@ -1,29 +1,28 @@
 import logging
 import sys
 from pathlib import Path
-from src.core.config import settings
 
-Path(settings.LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
+LOG_FILE = Path("logs/app.log")
+LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
+formatter = logging.Formatter(
+    "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+)
 
-def setup_logger():
-    app_logger = logging.getLogger("app")
-    app_logger.setLevel(getattr(logging, settings.LOG_LEVEL))
+# Консольный обработчик
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(formatter)
 
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+# Файловый обработчик
+file_handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
+file_handler.setFormatter(formatter)
 
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
-    app_logger.addHandler(console_handler)
+# Настройка корневого логгера
+logging.basicConfig(level=logging.INFO, handlers=[console_handler, file_handler])
 
-    file_handler = logging.FileHandler(settings.LOG_FILE, encoding="utf-8")
-    file_handler.setFormatter(formatter)
-    app_logger.addHandler(file_handler)
-
-    return app_logger
+# Основной логгер
+logger = logging.getLogger("app")
 
 
-logger = setup_logger()
+def get_logger(name: str) -> logging.Logger:
+    return logging.getLogger(name)
