@@ -1,3 +1,4 @@
+from datetime import datetime as dt
 from typing import List, Optional
 from fastapi import APIRouter, Depends, status, UploadFile, File, Form, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,9 +12,26 @@ from src.domain.post.use_cases.get_posts import GetPostsUseCase
 from src.domain.post.use_cases.get_post import GetPostUseCase
 from src.domain.post.use_cases.update_post import UpdatePostUseCase
 from src.domain.post.use_cases.delete_post import DeletePostUseCase
+from src.infrastructure.postgres.repositories.post_repository import PostRepository
+from src.infrastructure.postgres.repositories.post_image_repository import (
+    PostImageRepository,
+)
 from src.services.media_uploader import save_file
+from src.core.exceptions.api_exceptions import (
+    NotFoundException,
+    ForbiddenException,
+    InvalidIDException,
+)
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/posts", tags=["Posts"])
+
+
+def validate_id(id: int) -> int:
+    if id <= 0:
+        raise InvalidIDException(id)
+    return id
 
 
 @router.get("/", response_model=List[Post])
@@ -31,6 +49,7 @@ async def get_post(
     id: int,
     db: AsyncSession = Depends(get_db),
 ):
+    validate_id(id)
     use_case = GetPostUseCase()
     return await use_case.execute(db, id)
 
@@ -67,6 +86,7 @@ async def update_post(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    validate_id(id)
     use_case = UpdatePostUseCase()
     return await use_case.execute(
         db, id, post_data, current_user.id, current_user.is_admin
@@ -79,6 +99,7 @@ async def delete_post(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    validate_id(id)
     use_case = DeletePostUseCase()
     await use_case.execute(db, id, current_user.id, current_user.is_admin)
     return {"status": "success", "message": f"Post {id} deleted"}
@@ -91,18 +112,22 @@ async def add_post_image(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    from src.infrastructure.sqlite.repositories.post_repository import PostRepository
+    validate_id(post_id)
 
     repo = PostRepository(db)
     post = await repo.get_by_id(post_id)
-    if post.author_id != current_user.id:
-        raise HTTPException(
-            status_code=403, detail="Вы не можете добавить картинку к чужому посту"
+    if not post:
+        raise NotFoundException(detail=f"Пост с id '{post_id}' не найден")
+
+    if not current_user.is_admin and post.author_id != current_user.id:
+        raise ForbiddenException(
+            detail="Вы не можете добавлять картинки к чужому посту"
         )
 
     url = await save_file(file)
     await repo.add_image(post_id, url)
     await db.commit()
+
     return {"message": "Image added", "url": url, "post_id": post_id}
 
 
@@ -113,19 +138,22 @@ async def delete_post_image(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    from src.infrastructure.sqlite.repositories.post_repository import PostRepository
+    validate_id(post_id)
+    validate_id(image_id)
 
     repo = PostRepository(db)
     post = await repo.get_by_id(post_id)
-    if post.author_id != current_user.id and not current_user.is_admin:
-        raise HTTPException(
-            status_code=403, detail="Вы не можете удалять картинки из чужого поста"
-        )
+    if not post:
+        raise NotFoundException(detail=f"Пост с id '{post_id}' не найден")
 
-    image = await repo.get_image_by_id(image_id)
-    if not image or image.post_id != post_id:
-        raise HTTPException(status_code=404, detail="Image not found")
+    if not current_user.is_admin and post.author_id != current_user.id:
+        raise ForbiddenException(detail="Вы не можете удалять картинки из чужого поста")
 
-    await repo.delete_image(image_id)
+    image_repo = PostImageRepository(db)
+    deleted = await image_repo.delete_by_id(image_id)
+
+    if not deleted:
+        raise NotFoundException(detail=f"Картинка с id '{image_id}' не найдена")
+
     await db.commit()
-    return {"message": "Image deleted", "image_id": image_id}
+    return {"status": "success", "message": f"Картинка {image_id} удалена"}

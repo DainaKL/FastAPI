@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.sqlite.repositories.user_repository import UserRepository
+from src.infrastructure.postgres.repositories.user_repository import UserRepository
 from src.core.security import get_password_hash
 from src.core.exceptions.api_exceptions import UserAlreadyExistsException
 
@@ -14,4 +14,5 @@ class RegisterUserUseCase:
         hashed_password = get_password_hash(password)
         user = await user_repo.create_user(login=login, password=hashed_password)
         await db.commit()
+
         return user

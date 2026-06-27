@@ -5,7 +5,7 @@ from src.core.database import get_db
 from src.domain.auth.use_cases.authenticate_user import AuthenticateUserUseCase
 from src.domain.auth.use_cases.register_user import RegisterUserUseCase
 from src.domain.auth.use_cases.create_access_token import CreateAccessTokenUseCase
-from src.schemas.users import UserCreate, User as UserSchema
+from src.schemas.users import UserCreate, UserResponse
 from src.core.exceptions.api_exceptions import (
     UserAlreadyExistsException,
     UserNotFoundException,
@@ -16,13 +16,12 @@ from src.core.exceptions.api_exceptions import (
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register", response_model=UserSchema)
+@router.post("/register", response_model=UserResponse)
 async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     try:
         use_case = RegisterUserUseCase()
         user = await use_case.execute(db, user_data.login, user_data.password)
-        await db.commit()
-        return UserSchema.model_validate(user)
+        return UserResponse.model_validate(user)
     except UserAlreadyExistsException as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:

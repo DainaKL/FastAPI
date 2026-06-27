@@ -1,26 +1,23 @@
 import asyncio
 from logging.config import fileConfig
+
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import async_engine_from_config
+
 from alembic import context
 
-from src.infrastructure.sqlite.database import Base
+from src.infrastructure.postgres.database import Base
 from src.core.config import settings
-from src.infrastructure.sqlite.models.category import Category
-from src.infrastructure.sqlite.models.comment import Comment
-from src.infrastructure.sqlite.models.location import Location
-from src.infrastructure.sqlite.models.post import Post
-from src.infrastructure.sqlite.models.user import User
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", settings.DATABASE_SYNC_URL)
-
 target_metadata = Base.metadata
+
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 
 def run_migrations_offline() -> None:
@@ -38,19 +35,22 @@ def run_migrations_offline() -> None:
 
 def do_run_migrations(connection: Connection) -> None:
     context.configure(connection=connection, target_metadata=target_metadata)
+
     with context.begin_transaction():
         context.run_migrations()
 
 
 async def run_async_migrations() -> None:
-    engine = create_async_engine(
-        settings.DATABASE_SYNC_URL.replace("postgresql://", "postgresql+asyncpg://")
+    connectable = async_engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
     )
 
-    async with engine.connect() as connection:
+    async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
 
-    await engine.dispose()
+    await connectable.dispose()
 
 
 def run_migrations_online() -> None:

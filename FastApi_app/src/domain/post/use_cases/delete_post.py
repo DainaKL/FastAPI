@@ -1,6 +1,6 @@
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.sqlite.repositories.post_repository import PostRepository
+from src.infrastructure.postgres.repositories.post_repository import PostRepository
 from src.core.exceptions.api_exceptions import (
     PostNotFoundException,
     InvalidIDException,

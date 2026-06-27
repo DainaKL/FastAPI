@@ -1,6 +1,8 @@
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.sqlite.repositories.comment_repository import CommentRepository
+from src.infrastructure.postgres.repositories.comment_repository import (
+    CommentRepository,
+)
 from src.schemas.comments import Comment as CommentSchema, CommentUpdate
 from src.core.exceptions.api_exceptions import (
     CommentNotFoundException,

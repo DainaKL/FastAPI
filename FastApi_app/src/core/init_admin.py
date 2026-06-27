@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from src.core.database import get_async_session
 from src.core.security import get_password_hash
-from src.infrastructure.sqlite.models.user import User
+from src.infrastructure.postgres.models.user import User
 from src.core.logger import logger
 
 

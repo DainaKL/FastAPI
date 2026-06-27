@@ -40,4 +40,4 @@ class Comment(CommentBase):
     author_id: int
     post_id: int
     created_at: datetime
-    images: List[CommentImage] = []
+    images: List[CommentImage] = [] 

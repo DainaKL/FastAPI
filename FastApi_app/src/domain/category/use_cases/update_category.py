@@ -1,6 +1,6 @@
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.sqlite.repositories.category_repository import (
+from src.infrastructure.postgres.repositories.category_repository import (
     CategoryRepository,
 )
 from src.schemas.category import Category as CategorySchema, CategoryUpdate

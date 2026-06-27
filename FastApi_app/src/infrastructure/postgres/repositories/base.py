@@ -2,7 +2,7 @@ from typing import Any, Dict, Generic, List, Optional, TypeVar
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from src.infrastructure.sqlite.database import Base
+from src.infrastructure.postgres.database import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
 

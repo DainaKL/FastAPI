@@ -1,7 +1,7 @@
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
-from src.infrastructure.sqlite.database import Base
+from src.infrastructure.postgres.database import Base
 
 
 class PostImage(Base):

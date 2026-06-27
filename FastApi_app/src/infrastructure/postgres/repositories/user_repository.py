@@ -2,8 +2,8 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.sqlite.models.user import User
-from src.infrastructure.sqlite.repositories.base import BaseRepository
+from src.infrastructure.postgres.models.user import User
+from src.infrastructure.postgres.repositories.base import BaseRepository
 
 
 class UserRepository(BaseRepository[User]):
@@ -28,5 +28,4 @@ class UserRepository(BaseRepository[User]):
     async def create_user(
         self, login: str, password: str, is_admin: bool = False
     ) -> User:
-        # Здесь НЕ хешируем! Пароль уже хеширован в use case
         return await self.create(login=login, password=password, is_admin=is_admin)

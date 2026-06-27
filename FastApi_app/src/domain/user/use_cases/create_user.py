@@ -1,6 +1,6 @@
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.sqlite.repositories.user_repository import UserRepository
+from src.infrastructure.postgres.repositories.user_repository import UserRepository
 from src.schemas.users import User as UserSchema
 from src.core.exceptions.api_exceptions import UserAlreadyExistsException
 from src.core.security import get_password_hash

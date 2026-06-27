@@ -1,6 +1,6 @@
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.sqlite.repositories.location_repository import (
+from src.infrastructure.postgres.repositories.location_repository import (
     LocationRepository,
 )
 from src.core.exceptions.api_exceptions import (

@@ -2,7 +2,9 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.sqlite.repositories.comment_repository import CommentRepository
+from src.infrastructure.postgres.repositories.comment_repository import (
+    CommentRepository,
+)
 from src.schemas.comments import Comment as CommentSchema
 from src.core.exceptions.api_exceptions import (
     InvalidLimitException,

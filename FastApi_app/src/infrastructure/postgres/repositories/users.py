@@ -8,7 +8,7 @@ from src.core.exceptions.database_exceptions import (
     UserAlreadyExistsException,
     UserNotFoundException,
 )
-from src.infrastructure.sqlite.models.users import User as UserModel
+from src.infrastructure.postgres.models.users import User as UserModel
 from src.schemas.users import User as UserSchema
 
 

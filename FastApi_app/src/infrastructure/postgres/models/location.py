@@ -4,7 +4,7 @@ from sqlalchemy import Boolean, Column, DateTime, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from src.infrastructure.sqlite.database import Base
+from src.infrastructure.postgres.database import Base
 
 
 class Location(Base):

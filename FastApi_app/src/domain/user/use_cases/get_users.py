@@ -1,7 +1,8 @@
 import logging
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from src.infrastructure.sqlite.repositories.user_repository import UserRepository
+from sqlalchemy.orm import selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.infrastructure.postgres.models.user import User
 from src.schemas.users import User as UserSchema
 from src.core.exceptions.api_exceptions import (
     InvalidLimitException,
@@ -24,8 +25,7 @@ class GetUsersUseCase:
         if limit < 1 or limit > 100:
             raise InvalidLimitException(limit)
 
-        repo = UserRepository(db)
-        stmt = select(repo.model).offset(skip).limit(limit)
+        stmt = select(User).offset(skip).limit(limit).options(selectinload(User.images))
         result = await db.execute(stmt)
-        users = result.scalars().all()
+        users = result.unique().scalars().all()
         return [UserSchema.model_validate(user) for user in users]

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.sqlite.repositories.user_repository import UserRepository
+from src.infrastructure.postgres.repositories.user_repository import UserRepository
 from src.core.security import verify_password
 from src.core.exceptions.api_exceptions import (
     UserNotFoundException,

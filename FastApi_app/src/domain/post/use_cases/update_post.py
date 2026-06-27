@@ -1,10 +1,10 @@
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.infrastructure.sqlite.repositories.post_repository import PostRepository
-from src.infrastructure.sqlite.repositories.category_repository import (
+from src.infrastructure.postgres.repositories.post_repository import PostRepository
+from src.infrastructure.postgres.repositories.category_repository import (
     CategoryRepository,
 )
-from src.infrastructure.sqlite.repositories.location_repository import (
+from src.infrastructure.postgres.repositories.location_repository import (
     LocationRepository,
 )
 from src.schemas.posts import Post as PostSchema, PostUpdate

@@ -2,8 +2,8 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.sqlite.models.category import Category
-from src.infrastructure.sqlite.repositories.base import BaseRepository
+from src.infrastructure.postgres.models.category import Category
+from src.infrastructure.postgres.repositories.base import BaseRepository
 
 
 class CategoryRepository(BaseRepository[Category]):

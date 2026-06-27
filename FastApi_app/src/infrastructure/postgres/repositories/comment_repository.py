@@ -1,12 +1,15 @@
 from typing import List, Optional
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 
-from src.infrastructure.sqlite.models.comment import Comment
-from src.infrastructure.sqlite.models.comment_image import CommentImage
-from src.infrastructure.sqlite.repositories.base import BaseRepository
+from src.infrastructure.postgres.models.comment import Comment
+from src.infrastructure.postgres.models.comment_image import CommentImage
+from src.infrastructure.postgres.repositories.base import BaseRepository
 from src.core.exceptions.api_exceptions import CommentNotFoundException
+
+logger = logging.getLogger(__name__)
 
 
 class CommentRepository(BaseRepository[Comment]):
@@ -72,14 +75,28 @@ class CommentRepository(BaseRepository[Comment]):
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def create_comment(self, **kwargs) -> Comment:
-        return await self.create(**kwargs)
+    async def create(self, **kwargs) -> Comment:
+        comment = Comment(**kwargs)
+        self.session.add(comment)
+        await self.session.flush()
+        return comment
 
-    async def update_comment(self, comment_id: int, **kwargs) -> Optional[Comment]:
-        return await self.update(comment_id, **kwargs)
+    async def update(self, comment_id: int, **kwargs) -> Optional[Comment]:
+        comment = await self.get_by_id(comment_id)
+        if comment:
+            for key, value in kwargs.items():
+                if value is not None:
+                    setattr(comment, key, value)
+            await self.session.flush()
+        return comment
 
-    async def delete_comment(self, comment_id: int) -> bool:
-        return await self.delete(comment_id)
+    async def delete(self, comment_id: int) -> bool:
+        comment = await self.get_by_id(comment_id)
+        if comment:
+            await self.session.delete(comment)
+            await self.session.flush()
+            return True
+        return False
 
     async def add_image(self, comment_id: int, url: str) -> CommentImage:
         image = CommentImage(comment_id=comment_id, url=url)
@@ -94,9 +111,14 @@ class CommentRepository(BaseRepository[Comment]):
         return result.scalar_one_or_none()
 
     async def delete_image(self, image_id: int) -> bool:
-        image = await self.get_image_by_id(image_id)
-        if image:
+        try:
+            image = await self.get_image_by_id(image_id)
+            if not image:
+                logger.warning(f"Image with id {image_id} not found")
+                return False
             await self.session.delete(image)
             await self.session.flush()
             return True
-        return False
+        except Exception as e:
+            logger.error(f"Error deleting image {image_id}: {e}")
+            return False

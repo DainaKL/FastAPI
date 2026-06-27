@@ -1,7 +1,9 @@
 import re
-from pydantic import field_validator
+from typing import List, Optional
+from pydantic import field_validator, ConfigDict
 
 from src.schemas.base import BaseSchema
+from src.schemas.user_image import UserImage
 
 
 class UserBase(BaseSchema):
@@ -41,9 +43,17 @@ class UserUpdate(BaseSchema):
     is_admin: bool | None = None
 
 
-class User(UserBase):
-    id: int
-    is_admin: bool = False
+class UserResponse(BaseSchema):
 
-    class Config:
-        from_attributes = True
+    id: int
+    login: str
+    is_admin: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class User(UserResponse):
+
+    images: List[UserImage] = []
+
+    model_config = ConfigDict(from_attributes=True)

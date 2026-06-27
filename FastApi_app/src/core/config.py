@@ -24,6 +24,11 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/app.log"
+    
+    # Media settings
+    MEDIA_DIR: str = "media"
+    MAX_IMAGE_SIZE: int = 5 * 1024 * 1024
+    ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/png", "image/gif", "image/webp"]
 
     @property
     def DATABASE_URL(self) -> str:

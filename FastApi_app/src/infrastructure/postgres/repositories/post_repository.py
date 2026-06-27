@@ -1,12 +1,15 @@
 from typing import List, Optional
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.sqlite.models.post import Post
-from src.infrastructure.sqlite.models.post_image import PostImage
-from src.infrastructure.sqlite.repositories.base import BaseRepository
+from src.infrastructure.postgres.models.post import Post
+from src.infrastructure.postgres.models.post_image import PostImage
+from src.infrastructure.postgres.repositories.base import BaseRepository
 from src.core.exceptions.api_exceptions import PostNotFoundException
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PostRepository(BaseRepository[Post]):
@@ -34,14 +37,28 @@ class PostRepository(BaseRepository[Post]):
             raise PostNotFoundException(post_id=post_id)
         return post
 
-    async def create_post(self, **kwargs) -> Post:
-        return await self.create(**kwargs)
+    async def create(self, **kwargs) -> Post:
+        post = Post(**kwargs)
+        self.session.add(post)
+        await self.session.flush()
+        return post
 
-    async def update_post(self, post_id: int, **kwargs) -> Optional[Post]:
-        return await self.update(post_id, **kwargs)
+    async def update(self, post_id: int, **kwargs) -> Optional[Post]:
+        post = await self.get_by_id(post_id)
+        if post:
+            for key, value in kwargs.items():
+                if value is not None:
+                    setattr(post, key, value)
+            await self.session.flush()
+        return post
 
-    async def delete_post(self, post_id: int) -> bool:
-        return await self.delete(post_id)
+    async def delete(self, post_id: int) -> bool:
+        post = await self.get_by_id(post_id)
+        if post:
+            await self.session.delete(post)
+            await self.session.flush()
+            return True
+        return False
 
     async def add_image(self, post_id: int, url: str) -> PostImage:
         image = PostImage(post_id=post_id, url=url)
@@ -55,7 +72,7 @@ class PostRepository(BaseRepository[Post]):
         )
         return result.scalar_one_or_none()
 
-    async def delete_image(self, image_id: int) -> bool:
+    async def delete_image_by_id(self, image_id: int) -> bool:
         image = await self.get_image_by_id(image_id)
         if image:
             await self.session.delete(image)
